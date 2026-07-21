@@ -1,0 +1,21 @@
+# Bundled Windows Node runtime - not needed in the repo (hosts provide Node)
+node/
+
+# Cloudflare tunnel program + logs
+cloudflared.exe
+tunnel.log
+tunnel_out.log
+
+# Local editor/session config
+.claude/
+
+# Empty leftover from the reorg
+cloud-version/
+
+# --- Sensitive: never publish these ---
+# Local database (contains account password hashes)
+data.db
+data.db-shm
+data.db-wal
+# Item catalog dump (contains members' Discord IDs) - kept locally as a backup
+setup/seed-items.sql

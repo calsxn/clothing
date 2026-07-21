@@ -1,0 +1,53 @@
+FiveM Clothing Tracker - going live with Supabase + Netlify
+===========================================================
+Do these once, in order. Total time: ~15 minutes.
+
+PART 1 - SUPABASE (the online database)
+---------------------------------------
+1. Go to supabase.com -> Start your project -> sign up (GitHub login is fine)
+2. Click "New project"
+   - Name: clothing-tracker (anything works)
+   - Database password: make one up and save it somewhere (you rarely need it)
+   - Region: pick the closest to you
+   - Click "Create new project" and wait ~2 minutes
+3. Turn OFF email confirmation (accounts are username-only):
+   - Left menu: Authentication -> Sign In / Providers -> Email
+   - Turn OFF "Confirm email" -> Save
+4. Run the setup:
+   - Left menu: SQL Editor -> New query
+   - Open supabase-setup.sql (this folder), copy ALL of it, paste, click RUN
+5. Import the catalog:
+   - SQL Editor -> New query
+   - Open seed-items.sql, copy ALL of it, paste, click RUN
+   - (It's big - give it a few seconds. Should say "Success".)
+6. Get your two keys:
+   - Left menu: Project Settings (gear icon) -> API Keys /  Data API
+   - Copy the "Project URL" and the "anon public" key
+   - Paste both into config.js in this folder (replacing the PASTE-... text)
+
+PART 2 - NETLIFY (hosts the site pages)
+---------------------------------------
+7. Go to netlify.com -> Sign up (GitHub login is fine)
+8. On your Sites page, find the deploy drop area (Add new site -> Deploy manually)
+9. Drag this whole cloud-version FOLDER onto it
+10. Done - Netlify gives you a permanent link like https://something.netlify.app
+    (Site configuration -> Change site name to pick a nicer one)
+
+PART 3 - CLAIM YOUR ITEMS
+-------------------------
+11. Open your new site, click "Create account", make your account
+    (use username: cal to keep ownership of the imported items)
+12. Back in Supabase: SQL Editor -> New query
+    - Paste the contents of claim-items.sql -> RUN
+    - This makes your account the owner of all 1,433 imported items
+
+NOTES
+-----
+- Share the netlify.app link with your crew - accounts, items, activity,
+  online list and the info board all work exactly like before.
+- Passwords must be 6+ characters on the cloud version.
+- Free Supabase pauses the database if NOBODY visits for a week straight.
+  If that happens the site errors until you click "Restore" on the
+  Supabase dashboard. Regular use = never an issue.
+- To update the site later: edit files in this folder and drag it onto
+  Netlify again (Deploys page).

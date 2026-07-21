@@ -1,0 +1,12 @@
+{
+  "name": "fivem-clothing-tracker",
+  "version": "1.0.0",
+  "description": "Shared FiveM clothing & ped tracker with accounts and a synced database",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=24"
+  }
+}
