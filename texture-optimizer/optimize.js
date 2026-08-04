@@ -476,4 +476,12 @@ function interactive(opts) {
   })().catch(e => { console.error(e.message); rl.close(); });
 }
 
-main();
+// Run the CLI only when invoked directly; when required (by server.js) just
+// expose the engine so the web UI can reuse the exact same logic.
+if (require.main === module) main();
+
+module.exports = {
+  ROOT, PRESETS, AGGRESSIVE,
+  resolveOpts, walk, classify, readImageInfo, plan, targetDims, chooseFormat,
+  ensureTexconv, runTexconv, backup, human, TEXCONV,
+};

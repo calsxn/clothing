@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>FiveM Texture Optimizer</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="wrap">
+      <h1>🚗 FiveM Texture Optimizer</h1>
+      <p class="tag">Make cars, clothing &amp; MLO textures smaller so your server loads faster and stutters less.</p>
+    </div>
+  </header>
+
+  <main class="wrap">
+
+    <!-- STEP 1: choose a folder -->
+    <section class="card">
+      <div class="step">Step 1</div>
+      <h2>Pick the folder to optimize</h2>
+      <p class="muted">Paste the full path to a resource folder (it checks every sub-folder too).</p>
+
+      <div class="folder-row">
+        <input id="folder" type="text" spellcheck="false"
+               placeholder="e.g.  C:\FXServer\resources\[cars]" />
+        <button id="scanBtn" class="btn primary">Scan</button>
+      </div>
+
+      <div class="options">
+        <div class="opt">
+          <label>These textures are for…</label>
+          <div id="typeSeg" class="seg">
+            <button data-type="cars">Cars</button>
+            <button data-type="clothing">Clothing / Peds</button>
+            <button data-type="mlo">MLO / Interiors</button>
+            <button data-type="auto" class="on">Mixed</button>
+          </div>
+        </div>
+        <div class="opt inline">
+          <label class="switch">
+            <input id="aggressive" type="checkbox" />
+            <span>Make them extra small (1024px cap)</span>
+          </label>
+          <button id="advToggle" class="link">Advanced ▾</button>
+        </div>
+        <div id="advanced" class="advanced hidden">
+          <label>Force format
+            <select id="format">
+              <option value="">Auto (recommended)</option>
+              <option value="BC1">BC1 / DXT1 (smallest, no transparency)</option>
+              <option value="BC3">BC3 / DXT5 (transparency)</option>
+              <option value="BC7">BC7 (best quality)</option>
+            </select>
+          </label>
+          <label>Max size (px)
+            <input id="max" type="number" min="64" step="64" placeholder="auto" />
+          </label>
+        </div>
+      </div>
+
+      <div id="scanError" class="alert error hidden"></div>
+    </section>
+
+    <!-- STEP 2: results / preview -->
+    <section id="results" class="card hidden">
+      <div class="step">Step 2</div>
+      <h2>Here's what we found</h2>
+      <p class="muted" id="scanned"></p>
+
+      <div class="stats">
+        <div class="stat"><span id="sFound" class="num">0</span><span class="lbl">textures found</span></div>
+        <div class="stat good"><span id="sTodo" class="num">0</span><span class="lbl">can be optimized</span></div>
+        <div class="stat"><span id="sGood" class="num">0</span><span class="lbl">already fine</span></div>
+        <div class="stat"><span id="sSize" class="num">–</span><span class="lbl">their size now</span></div>
+      </div>
+
+      <div id="ytdNote" class="alert info hidden"></div>
+
+      <details id="tableWrap" class="tablebox">
+        <summary>Show the list of textures to optimize (<span id="tableCount">0</span>)</summary>
+        <div class="tscroll">
+          <table>
+            <thead><tr><th>Now</th><th></th><th>After</th><th>Format</th><th>Why</th><th>File</th></tr></thead>
+            <tbody id="tbody"></tbody>
+          </table>
+        </div>
+      </details>
+
+      <div class="applybar">
+        <label class="switch">
+          <input id="backup" type="checkbox" checked />
+          <span>Back up my original files first (recommended)</span>
+        </label>
+        <button id="applyBtn" class="btn go">Optimize now</button>
+      </div>
+      <p class="muted small">A backup copy of every file is saved in the tool's <code>_backup_textures</code> folder before anything changes, so you can always undo.</p>
+    </section>
+
+    <!-- STEP 3: progress -->
+    <section id="progress" class="card hidden">
+      <div class="step">Step 3</div>
+      <h2 id="progTitle">Optimizing…</h2>
+      <div class="bar"><div id="barFill" class="fill"></div></div>
+      <p id="progText" class="muted"></p>
+      <div id="doneBox" class="done hidden"></div>
+      <div id="log" class="log"></div>
+    </section>
+
+  </main>
+
+  <footer class="wrap muted small">
+    Runs on your machine • Share this window's link with your team on the same network •
+    .ytd packs need OpenIV/CodeWalker to repack (see the README)
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
