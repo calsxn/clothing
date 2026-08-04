@@ -5,19 +5,16 @@ Shrinks the textures for your cars, clothing and MLOs (resizes them, compresses
 them properly and adds mipmaps) so your server uses less VRAM, loads faster and
 stops the low-res / "texture failed to load" stutter.
 
-There are two ways to use it: an easy web page (best for a team) or the command
-line. Both use the same engine.
-
-
 =========================================================
-THE EASY WAY - A WEB PAGE FOR YOUR WHOLE TEAM (recommended)
+RUN IT - THE DESKTOP APP (recommended)
 =========================================================
 
-1. Double-click "Start Optimizer UI.bat".
-   A black window opens and your browser goes to  http://localhost:3001
-   Keep that black window open the whole time - it's the program.
+1. Double-click "Texture Optimizer.bat".
+   The app opens in its OWN window - no web browser, no tabs, no address bar.
+   (A tiny window may sit minimized in your taskbar; that just keeps the app
+   running. Closing the app window closes everything.)
 
-2. In the page:
+2. In the app:
    - Paste the folder you want to clean up
      (e.g.  C:\FXServer\resources\[cars] )
    - Choose what the textures are for: Cars / Clothing / MLO / Mixed.
@@ -30,13 +27,23 @@ THE EASY WAY - A WEB PAGE FOR YOUR WHOLE TEAM (recommended)
    it goes. Your originals are backed up first (into "_backup_textures") so you
    can always undo.
 
-LETTING THE TEAM USE IT
-   Anyone on the SAME network can open  http://YOUR-PC-IP:3001  in their browser
-   (find your IP by running "ipconfig" - look for the IPv4 Address). Only people
-   you trust should use it, because it can change files on the PC it runs on.
+(The app window uses the Microsoft Edge engine that's already built into
+Windows 10/11 - nothing extra to install. If Edge/Chrome can't be found it
+falls back to opening in your normal browser.)
 
-   Note: the person running the page picks a folder ON THE COMPUTER RUNNING THE
-   TOOL. Run it on the machine that has your resource files (e.g. your FiveM box).
+
+=========================================================
+SHARE IT WITH YOUR TEAM (optional)
+=========================================================
+
+Instead of the desktop app, you can run it as a page your teammates open in a
+browser: double-click "Start Optimizer UI.bat". It stays at http://localhost:3001
+and anyone on the SAME network can open  http://YOUR-PC-IP:3001  (find your IP
+by running "ipconfig" - look for the IPv4 Address).
+
+Only people you trust should use it, because it can change files on the PC it
+runs on. The folder someone picks is ON THE COMPUTER RUNNING THE TOOL, so run it
+on the machine that has your resource files (e.g. your FiveM box).
 
 
 =========================================================

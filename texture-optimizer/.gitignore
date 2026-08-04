@@ -7,6 +7,9 @@ _backup_textures/
 # Temp folder used while unpacking/repacking .ytd archives
 .ytd_work/
 
+# Dedicated Edge/Chrome profile for the desktop app window
+.app_profile/
+
 # Machine-specific settings (the path to your CodeWalker/GTAUtil tool)
 config.json
 

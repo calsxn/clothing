@@ -8,7 +8,7 @@ const http = require('node:http');
 const fs = require('node:fs');
 const path = require('node:path');
 const url = require('node:url');
-const { spawnSync } = require('node:child_process');
+const { spawnSync, spawn } = require('node:child_process');
 
 const E = require('./optimize.js'); // the shared engine
 
@@ -255,14 +255,76 @@ const server = http.createServer((req, res) => {
   res.writeHead(404); res.end('Not found');
 });
 
+// --- Opening the app ---
+// "--app" launches a dedicated desktop window using the Edge/Chrome engine that
+// ships with Windows (looks and behaves like a native app - no browser tabs or
+// address bar). Closing that window quits the program. Without "--app" it just
+// opens the default web browser.
+const APP_MODE = process.argv.includes('--app');
+
+function findAppBrowser() {
+  const pf = process.env['ProgramFiles'] || 'C:\\Program Files';
+  const pfx = process.env['ProgramFiles(x86)'] || 'C:\\Program Files (x86)';
+  const la = process.env['LOCALAPPDATA'] || '';
+  const cands = [
+    [pf, 'Microsoft\\Edge\\Application\\msedge.exe'],
+    [pfx, 'Microsoft\\Edge\\Application\\msedge.exe'],
+    [pf, 'Google\\Chrome\\Application\\chrome.exe'],
+    [pfx, 'Google\\Chrome\\Application\\chrome.exe'],
+    [la, 'Google\\Chrome\\Application\\chrome.exe'],
+  ].map(([a, b]) => (a ? path.join(a, b) : null));
+  for (const c of cands) { try { if (c && fs.existsSync(c)) return c; } catch {} }
+  return null;
+}
+
+function openInWindow(url) {
+  const exe = findAppBrowser();
+  if (!exe) return false;
+  const child = spawn(exe, [
+    '--app=' + url,
+    '--window-size=1200,900',
+    '--user-data-dir=' + path.join(ROOT, '.app_profile'), // own window + lifetime
+    '--no-first-run', '--no-default-browser-check',
+  ], { stdio: 'ignore' });
+  // When the user closes the app window, shut the whole thing down.
+  child.on('exit', () => { try { server.close(); } catch {} process.exit(0); });
+  child.on('error', () => {});
+  return true;
+}
+
+function openInBrowser(url) {
+  try { spawnSync('cmd', ['/c', 'start', '', url], { stdio: 'ignore' }); } catch {}
+}
+
+// If it's already running (double-clicked twice), just open a window and leave.
+server.on('error', (e) => {
+  const url = 'http://localhost:' + PORT;
+  if (e.code === 'EADDRINUSE') {
+    console.log('  Already running - opening the app window...');
+    if (!(APP_MODE && process.platform === 'win32' && openInWindow(url))) openInBrowser(url);
+    setTimeout(() => process.exit(0), 400);
+  } else {
+    console.error('  Could not start: ' + e.message);
+    process.exit(1);
+  }
+});
+
 server.listen(PORT, () => {
+  const url = 'http://localhost:' + PORT;
   console.log('');
-  console.log('  FiveM Texture Optimizer UI is running.');
-  console.log('  Open this in your browser:  http://localhost:' + PORT);
-  console.log('');
-  console.log('  Keep this window open while you use it. Close it to stop.');
-  // Best-effort: open the default browser on Windows.
-  if (process.platform === 'win32') {
-    try { spawnSync('cmd', ['/c', 'start', '', 'http://localhost:' + PORT], { stdio: 'ignore' }); } catch {}
+  console.log('  FiveM Texture Optimizer is running.');
+  if (process.platform === 'win32' && APP_MODE) {
+    console.log('  Opening the app window... (you can minimize this window)');
+    if (!openInWindow(url)) {
+      console.log('  (No Edge/Chrome found for the app window - opening your browser instead.)');
+      openInBrowser(url);
+      console.log('  Keep this window open while you use it. Close it to stop.');
+    }
+  } else if (process.platform === 'win32') {
+    console.log('  Opening in your browser:  ' + url);
+    openInBrowser(url);
+    console.log('  Keep this window open while you use it. Close it to stop.');
+  } else {
+    console.log('  Open this in your browser:  ' + url);
   }
 });
