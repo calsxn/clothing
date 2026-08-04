@@ -1,0 +1,17 @@
+# Auto-downloaded texconv.exe (Microsoft DirectXTex) - fetched on first run
+bin/
+
+# Safety copies of the textures this tool rewrites
+_backup_textures/
+
+# Temp folder used while unpacking/repacking .ytd archives
+.ytd_work/
+
+# Dedicated Edge/Chrome profile for the desktop app window
+.app_profile/
+
+# Machine-specific settings (the path to your CodeWalker/GTAUtil tool)
+config.json
+
+# Portable Node runtime, if dropped here
+node/

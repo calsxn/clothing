@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>sxn opti</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20100%20100'%3E%3Ctext%20y='.9em'%20font-size='90'%3E%F0%9F%9A%97%3C/text%3E%3C/svg%3E" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+<div class="app">
+
+  <!-- ================= SIDEBAR ================= -->
+  <aside class="sidebar">
+    <div class="brand">
+      <span class="logo">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.5 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"/>
+          <circle cx="7" cy="17" r="2"/><path d="M9 17h6"/><circle cx="17" cy="17" r="2"/>
+        </svg>
+      </span>
+      <span class="bname">sxn opti</span>
+    </div>
+
+    <nav class="nav">
+      <button class="navitem active" data-section="optimize">
+        <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></span>
+        <span class="lbl">Optimize</span>
+      </button>
+      <button class="navitem" data-section="vehicles">
+        <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.5 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"/><circle cx="7" cy="17" r="2"/><path d="M9 17h6"/><circle cx="17" cy="17" r="2"/></svg></span>
+        <span class="lbl">Vehicles</span>
+      </button>
+      <button class="navitem" data-section="clothing">
+        <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.4 5.6 16 4a4 4 0 0 1-8 0L3.6 5.6a1 1 0 0 0-.5 1.3l1.3 3.1a1 1 0 0 0 1.3.5L8 9.7V19a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V9.7l2.3 1.2a1 1 0 0 0 1.3-.5l1.3-3.1a1 1 0 0 0-.5-1.3Z"/></svg></span>
+        <span class="lbl">Clothing</span>
+      </button>
+      <button class="navitem" data-section="mlo">
+        <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"/><path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"/><path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"/><path d="M10 6h4M10 10h4M10 14h4M10 18h4"/></svg></span>
+        <span class="lbl">MLO</span>
+      </button>
+      <div class="navsep"></div>
+      <button class="navitem" data-section="settings">
+        <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/></svg></span>
+        <span class="lbl">Settings</span>
+      </button>
+    </nav>
+
+    <div class="sidefoot">
+      <div id="sideToolStat" class="toolstat"><span class="dot"></span><span class="txt">tool: checking…</span></div>
+      <div class="ver">FiveM texture optimizer</div>
+    </div>
+  </aside>
+
+  <!-- ================= MAIN ================= -->
+  <main class="main">
+    <header class="mainbar">
+      <div>
+        <h1 id="sectionTitle">Optimize</h1>
+        <p id="sectionSub" class="muted small">Optimize any folder of textures — cars, clothing and MLO together.</p>
+      </div>
+      <span id="presetChip" class="chip hidden"></span>
+    </header>
+
+    <div class="content">
+
+      <!-- ---------- WORK PANEL (Optimize / Vehicles / Clothing / MLO) ---------- -->
+      <section id="panel-work">
+
+        <div class="card">
+          <label class="fieldlabel">Folder to optimize</label>
+          <div class="folder-row">
+            <input id="folder" type="text" spellcheck="false" placeholder="e.g.  C:\FXServer\resources\[cars]" />
+            <button id="scanBtn" class="btn primary">Scan</button>
+          </div>
+
+          <div class="optbar">
+            <div id="typeSegWrap" class="optcol">
+              <label>These textures are for…</label>
+              <div id="typeSeg" class="seg">
+                <button data-type="cars">Cars</button>
+                <button data-type="clothing">Clothing</button>
+                <button data-type="mlo">MLO</button>
+                <button data-type="auto" class="on">Mixed</button>
+              </div>
+            </div>
+            <label class="switch"><input id="aggressive" type="checkbox" /><span>Extra small (1024px cap)</span></label>
+            <label class="switch" id="liveryWrap" title="Leave livery textures (logos, sponsor art) at full quality"><input id="skipLiveries" type="checkbox" checked /><span>Skip vehicle liveries</span></label>
+            <button id="advToggle" class="link">Advanced ▾</button>
+          </div>
+          <div id="advanced" class="advanced hidden">
+            <label>Force format
+              <select id="format">
+                <option value="">Auto (recommended)</option>
+                <option value="BC1">BC1 / DXT1 (smallest, no transparency)</option>
+                <option value="BC3">BC3 / DXT5 (transparency)</option>
+                <option value="BC7">BC7 (best quality)</option>
+              </select>
+            </label>
+            <label>Max size (px)
+              <input id="max" type="number" min="64" step="64" placeholder="auto" />
+            </label>
+          </div>
+          <div id="scanError" class="alert error hidden"></div>
+        </div>
+
+        <!-- results -->
+        <section id="results" class="card hidden">
+          <h2>Preview</h2>
+          <p class="muted small" id="scanned"></p>
+
+          <div class="overview">
+            <div class="gaugecard">
+              <div class="gauge">
+                <svg viewBox="0 0 120 120">
+                  <defs>
+                    <linearGradient id="ggrad" x1="0" y1="0" x2="1" y2="1">
+                      <stop offset="0" stop-color="#34d399" /><stop offset="1" stop-color="#10b981" />
+                    </linearGradient>
+                  </defs>
+                  <circle class="track" cx="60" cy="60" r="52" />
+                  <circle class="prog" id="gaugeRing" cx="60" cy="60" r="52" />
+                </svg>
+                <div class="gauge-center"><span id="gaugePct" class="gpct">0%</span><span class="gsub">optimised</span></div>
+              </div>
+              <div class="gaugeinfo">
+                <div class="gtitle">Pack optimised</div>
+                <div id="gaugeSub" class="muted small">—</div>
+              </div>
+            </div>
+
+            <div class="metric load">
+              <div class="mlabel">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                Est. FiveM load time
+              </div>
+              <div class="mvalue"><span id="loadNow">–</span></div>
+              <div id="loadSub" class="msub"></div>
+              <div class="mnote">rough estimate from total texture size</div>
+            </div>
+          </div>
+
+          <div class="stats">
+            <div class="stat"><span id="sFound" class="num">0</span><span class="lbl">textures found</span></div>
+            <div class="stat good"><span id="sTodo" class="num">0</span><span class="lbl">can be optimized</span></div>
+            <div class="stat"><span id="sGood" class="num">0</span><span class="lbl">already fine</span></div>
+            <div class="stat"><span id="sSize" class="num">–</span><span class="lbl">their size now</span></div>
+          </div>
+
+          <p id="liveryNote" class="muted small hidden"></p>
+          <div id="ytdNote" class="alert info hidden"></div>
+
+          <details id="tableWrap" class="tablebox">
+            <summary>Show the list of textures to optimize (<span id="tableCount">0</span>)</summary>
+            <div class="tscroll">
+              <table>
+                <thead><tr><th>Now</th><th></th><th>After</th><th>Format</th><th>Why</th><th>File</th></tr></thead>
+                <tbody id="tbody"></tbody>
+              </table>
+            </div>
+          </details>
+
+          <div class="ytdopt">
+            <label class="switch" id="ytdToggleWrap">
+              <input id="ytd" type="checkbox" />
+              <span>Also optimize the <b>.ytd</b> packs (cars / clothing / MLO)</span>
+            </label>
+            <span id="ytdHint" class="small muted"></span>
+          </div>
+
+          <div class="applybar">
+            <label class="switch"><input id="backup" type="checkbox" checked /><span>Back up my original files first</span></label>
+            <button id="applyBtn" class="btn go">Optimize now</button>
+          </div>
+          <p class="muted small">Originals are copied to <code>_backup_textures</code> before anything changes, so you can always undo.</p>
+        </section>
+
+        <!-- progress -->
+        <section id="progress" class="card hidden">
+          <h2 id="progTitle">Optimizing…</h2>
+          <div class="bar"><div id="barFill" class="fill"></div></div>
+          <p id="progText" class="muted small"></p>
+          <div id="doneBox" class="done hidden"></div>
+          <div id="log" class="log"></div>
+        </section>
+
+      </section>
+
+      <!-- ---------- SETTINGS PANEL ---------- -->
+      <section id="panel-settings" class="hidden">
+        <div class="card">
+          <h2>Optimizing .ytd packs</h2>
+          <p class="muted small">Finished car / clothing / MLO textures live packed inside <code>.ytd</code> files.
+            Repacking a <code>.ytd</code> safely needs a tool that understands that format — and there is
+            <b>no simple free command-line tool</b> that does it. (GTAUtil does <b>not</b> support <code>.ytd</code>
+            textures, and OpenIV has no command line.) So sxn opti can't rewrite <code>.ytd</code> files by itself.</p>
+          <p class="muted small"><b>The reliable way</b> to optimize a <code>.ytd</code>:</p>
+          <ol class="steps muted small">
+            <li>Open the <code>.ytd</code> in <b>OpenIV</b> or <b>CodeWalker</b> and export its textures (as <code>.dds</code>).</li>
+            <li>Run those exported textures through sxn opti (just scan that folder).</li>
+            <li>Import the optimized <code>.dds</code> back into the <code>.ytd</code> and save.</li>
+          </ol>
+          <p class="muted small">Or use a purpose-built app like <b>ToolKitV</b>, which optimizes textures inside <code>.ytd</code> for you.
+            sxn opti still scans your <code>.ytd</code> files and shows the biggest ones so you know which to fix.</p>
+        </div>
+
+        <details class="card">
+          <summary class="advset">Advanced — connect a .ytd command-line tool (optional)</summary>
+          <p class="muted small">Only if you have a CLI that can extract &amp; rebuild <code>.ytd</code> texture dictionaries
+            (a custom CodeWalker.CLI build, etc.). GTAUtil will <b>not</b> work here. The exact commands live in
+            <code>config.json</code> next to the tool — adjust them to match yours.</p>
+          <label class="fieldlabel">Path to the tool's .exe</label>
+          <div class="folder-row">
+            <input id="toolPath" type="text" spellcheck="false" placeholder="e.g.  C:\Tools\ytd-cli.exe" />
+            <button id="saveTool" class="btn primary">Save</button>
+          </div>
+          <p id="toolStatus" class="small muted"></p>
+        </details>
+
+        <div class="card">
+          <h2>About</h2>
+          <p class="muted small">sxn opti resizes oversized textures, compresses them with the right DDS/BC format,
+            and builds mipmaps — cutting VRAM use and texture-streaming stutter. It does this automatically for
+            loose textures (<code>.dds .png .jpg .tga .bmp</code>); <code>.ytd</code> packs use the workflow above.
+            Runs entirely on this PC.</p>
+        </div>
+      </section>
+
+    </div>
+  </main>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
