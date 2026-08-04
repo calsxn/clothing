@@ -108,17 +108,40 @@ async function handleScan(req, res) {
   const opts = buildOpts(q);
   const { jobs, todo, skipped, liveries, ytdList, ytdTotal } = scan(folder, opts);
   const totalToOpt = todo.reduce((a, b) => a + b.size, 0);
+  const ytdReady = !!E.findYtdTool();
+
+  // How much of the pack is already in good shape (drives the gauge).
+  const found = jobs.length;
+  const optimisedPct = found ? Math.round(((found - todo.length) / found) * 100)
+                             : (ytdList.length ? 0 : 100);
+
+  // Estimate the folder's texture weight now vs after optimizing, and turn that
+  // into a rough "how long it takes to load into FiveM" number. LOAD_MBPS is an
+  // approximate rate for streaming assets into the game (disk + decompress + VRAM).
+  const LOAD_MBPS = 50;
+  const looseNow = jobs.reduce((a, b) => a + b.size, 0);
+  let looseAfter = 0;
+  for (const j of jobs) {
+    if (j.skip) { looseAfter += j.size; continue; } // kept as-is (already good / livery)
+    const [tw, th] = j.tgt.split('x').map(Number);
+    const bpp = j.fmt === 'BC1' ? 0.5 : 1;           // BC1 = 0.5 B/px, BC3/BC7 = 1 B/px
+    looseAfter += Math.round(tw * th * bpp * 4 / 3); // + ~1/3 for the mip chain
+  }
+  const currentBytes = looseNow + ytdTotal;
+  const projectedBytes = looseAfter + (ytdReady ? Math.round(ytdTotal * 0.55) : ytdTotal);
 
   sendJson(res, 200, {
     folder,
     settings: { type: opts.type, maxSize: opts.maxSize, format: opts.format, presetLabel: opts.presetLabel },
     counts: { found: jobs.length, toOptimize: todo.length, alreadyGood: skipped, liveries },
     totalToOptimizeBytes: totalToOpt,
+    optimisedPct,
+    load: { mbps: LOAD_MBPS, currentBytes, projectedBytes },
     jobs: todo,
     ytd: { count: ytdList.length, totalBytes: ytdTotal, files: ytdList.slice(0, 50) },
     platform: process.platform,
     texconvReady: fs.existsSync(E.TEXCONV),
-    ytdToolReady: !!E.findYtdTool(),
+    ytdToolReady: ytdReady,
   });
 }
 

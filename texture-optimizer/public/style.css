@@ -184,6 +184,36 @@ code { background: rgba(255,255,255,.07); padding: 1px 6px; border-radius: 6px; 
 .alert.info  { background: rgba(251,191,36,.10); border: 1px solid rgba(251,191,36,.34); color: #ffe6ad; }
 #liveryNote { margin-top: 12px; }
 
+/* overview: gauge + load-time widget */
+.overview { display: grid; grid-template-columns: 1.3fr 1fr; gap: 14px; margin: 18px 0; }
+.gaugecard, .metric {
+  background: rgba(255,255,255,.03); border: 1px solid var(--hair);
+  border-radius: 16px; padding: 20px 22px;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.04);
+}
+.gaugecard { display: flex; align-items: center; gap: 20px; }
+.gauge { position: relative; width: 132px; height: 132px; flex: 0 0 132px; }
+.gauge svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+.gauge .track { fill: none; stroke: rgba(255,255,255,.08); stroke-width: 11; }
+.gauge .prog {
+  fill: none; stroke: url(#ggrad); stroke-width: 11; stroke-linecap: round;
+  stroke-dasharray: 326.7; stroke-dashoffset: 326.7;
+  transition: stroke-dashoffset .6s cubic-bezier(.4,0,.2,1);
+  filter: drop-shadow(0 0 6px rgba(16,185,129,.5));
+}
+.gauge-center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; }
+.gpct { font-size: 30px; font-weight: 800; letter-spacing: .5px; }
+.gsub { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.gaugeinfo .gtitle { font-size: 16px; font-weight: 700; margin-bottom: 4px; }
+
+.metric.load { display: flex; flex-direction: column; justify-content: center; }
+.mlabel { display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); }
+.mlabel svg { width: 15px; height: 15px; color: var(--accent-light); }
+.mvalue { font-size: 38px; font-weight: 800; letter-spacing: .5px; margin: 6px 0 2px; background: linear-gradient(120deg, #fff, #c4b5fd); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.msub { font-size: 13.5px; color: var(--text); }
+.msub b { color: var(--go); }
+.mnote { font-size: 11.5px; color: #6b7492; margin-top: 8px; }
+
 /* stats */
 .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin: 18px 0; }
 .stat {

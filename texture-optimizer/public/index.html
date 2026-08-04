@@ -108,6 +108,38 @@
         <section id="results" class="card hidden">
           <h2>Preview</h2>
           <p class="muted small" id="scanned"></p>
+
+          <div class="overview">
+            <div class="gaugecard">
+              <div class="gauge">
+                <svg viewBox="0 0 120 120">
+                  <defs>
+                    <linearGradient id="ggrad" x1="0" y1="0" x2="1" y2="1">
+                      <stop offset="0" stop-color="#34d399" /><stop offset="1" stop-color="#10b981" />
+                    </linearGradient>
+                  </defs>
+                  <circle class="track" cx="60" cy="60" r="52" />
+                  <circle class="prog" id="gaugeRing" cx="60" cy="60" r="52" />
+                </svg>
+                <div class="gauge-center"><span id="gaugePct" class="gpct">0%</span><span class="gsub">optimised</span></div>
+              </div>
+              <div class="gaugeinfo">
+                <div class="gtitle">Pack optimised</div>
+                <div id="gaugeSub" class="muted small">—</div>
+              </div>
+            </div>
+
+            <div class="metric load">
+              <div class="mlabel">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                Est. FiveM load time
+              </div>
+              <div class="mvalue"><span id="loadNow">–</span></div>
+              <div id="loadSub" class="msub"></div>
+              <div class="mnote">rough estimate from total texture size</div>
+            </div>
+          </div>
+
           <div class="stats">
             <div class="stat"><span id="sFound" class="num">0</span><span class="lbl">textures found</span></div>
             <div class="stat good"><span id="sTodo" class="num">0</span><span class="lbl">can be optimized</span></div>

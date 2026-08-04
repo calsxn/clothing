@@ -84,6 +84,11 @@ For each loose texture it finds (.dds .png .jpg .tga .bmp) it will:
   - build a full mipmap chain (the big fix for shimmering and VRAM spikes).
 Textures that are already sized, compressed and mipmapped are left alone.
 
+The Preview also shows a "Pack optimised" gauge (how much of the folder is
+already in good shape) and an "Est. FiveM load time" - a rough guide to how long
+the folder's textures take to load into the game now vs after optimizing. The
+load time is an estimate from the total texture size, not an exact measurement.
+
 LIVERIES ARE LEFT ALONE (on cars)
   Livery textures (files named like "..._livery..." or "sign_1") usually hold
   logos and sponsor art that would look bad if shrunk or compressed, so sxn opti

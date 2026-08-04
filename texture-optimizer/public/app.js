@@ -7,6 +7,7 @@ let currentType = 'auto';    // active preset used for scans
 let lastScan = null;
 let running = false;
 let ytdReady = false;
+let gaugeStart = 0; // optimised% at the moment an optimize run begins
 
 // ---------- helpers ----------
 function human(bytes) {
@@ -19,6 +20,16 @@ function human(bytes) {
 }
 function esc(s) { return String(s).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c])); }
 function cssEsc(s) { return String(s).replace(/["\\\]]/g, '\\$&'); }
+function loadSecs(bytes, mbps) { return (bytes / 1048576) / (mbps || 50); }
+function fmtSecs(s) { if (s < 1) return '<1s'; if (s < 10) return s.toFixed(1) + 's'; return Math.round(s) + 's'; }
+function setGauge(pct) {
+  pct = Math.max(0, Math.min(100, Math.round(pct)));
+  const r = $('gaugeRing'); if (!r) return;
+  const C = 2 * Math.PI * 52;
+  r.style.strokeDasharray = C;
+  r.style.strokeDashoffset = C * (1 - pct / 100);
+  $('gaugePct').textContent = pct + '%';
+}
 
 // ---------- sidebar navigation ----------
 const SECTIONS = {
@@ -160,6 +171,18 @@ function renderResults(d) {
   $('sGood').textContent = d.counts.alreadyGood;
   $('sSize').textContent = human(d.totalToOptimizeBytes);
 
+  // gauge: how much of the pack is already optimised
+  setGauge(d.optimisedPct);
+  $('gaugeSub').textContent = `${d.counts.found - d.counts.toOptimize} of ${d.counts.found} textures already good`;
+
+  // estimated FiveM load time (now, and projected after optimizing)
+  const L = d.load || { mbps: 50, currentBytes: 0, projectedBytes: 0 };
+  $('loadNow').textContent = '~' + fmtSecs(loadSecs(L.currentBytes, L.mbps));
+  const faster = L.currentBytes ? Math.round((1 - L.projectedBytes / L.currentBytes) * 100) : 0;
+  $('loadSub').innerHTML = d.counts.toOptimize
+    ? `after optimizing ≈ <b>${fmtSecs(loadSecs(L.projectedBytes, L.mbps))}</b>` + (faster > 0 ? ` (${faster}% faster)` : '')
+    : 'already optimized 🎉';
+
   const ln = $('liveryNote');
   if (d.counts.liveries) {
     ln.textContent = `🎨 ${d.counts.liveries} vehicle livery texture(s) skipped — kept at full quality.`;
@@ -227,6 +250,7 @@ function doApply() {
       ($('backup').checked ? 'Originals will be backed up first.' : 'WARNING: backup is OFF.'))) return;
 
   running = true;
+  gaugeStart = (lastScan && lastScan.optimisedPct) || 0;
   $('applyBtn').disabled = true;
   $('progress').classList.remove('hidden');
   $('doneBox').classList.add('hidden');
@@ -273,6 +297,8 @@ function doApply() {
 function setPct(i, t) {
   $('barFill').style.width = Math.round((i / t) * 100) + '%';
   $('progText').textContent = `${i} of ${t} done…`;
+  // climb the gauge from where the pack started toward 100%
+  setGauge(gaugeStart + (i / t) * (100 - gaugeStart));
 }
 function addLog(m) {
   addRaw(m.ok ? 'ok' : 'bad',
@@ -297,6 +323,19 @@ function finish(m) {
   $('progTitle').textContent = 'All done!';
   $('progText').textContent = `${m.ok} optimized, ${m.fail} failed.`;
   const saved = (m.before || 0) - (m.after || 0);
+
+  // gauge to 100% and refresh the load-time estimate with the real result
+  setGauge(100);
+  $('gaugeSub').textContent = 'all textures optimised';
+  if (lastScan && lastScan.load) {
+    const L = lastScan.load;
+    const afterBytes = Math.max(0, L.currentBytes - saved);
+    $('loadNow').textContent = '~' + fmtSecs(loadSecs(afterBytes, L.mbps));
+    const faster = L.currentBytes ? Math.round((1 - afterBytes / L.currentBytes) * 100) : 0;
+    $('loadSub').innerHTML = `was ~${fmtSecs(loadSecs(L.currentBytes, L.mbps))}` +
+      (faster > 0 ? ` — now <b>${faster}% faster</b>` : '');
+  }
+
   const pct = m.before ? Math.round((saved / m.before) * 100) : 0;
   const box = $('doneBox');
   box.classList.remove('hidden');
