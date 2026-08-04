@@ -116,7 +116,30 @@ async function handleScan(req, res) {
     ytd: { count: ytdList.length, totalBytes: ytdTotal, files: ytdList.slice(0, 50) },
     platform: process.platform,
     texconvReady: fs.existsSync(E.TEXCONV),
+    ytdToolReady: !!E.findYtdTool(),
   });
+}
+
+// ---------- settings (YTD tool path) ----------
+function handleGetSettings(req, res) {
+  const cfg = E.loadConfig();
+  const found = E.findYtdTool(cfg);
+  sendJson(res, 200, { toolPath: cfg.ytd.toolPath || '', detected: found || '', ready: !!found });
+}
+
+async function handleSetSettings(req, res) {
+  const q = await readBody(req);
+  const p = (q.toolPath || '').trim().replace(/^["']|["']$/g, '');
+  if (p) {
+    let ok = false;
+    try { ok = fs.existsSync(p) && fs.statSync(p).isFile(); } catch {}
+    if (!ok) return sendJson(res, 400, { error: 'That file does not exist: ' + p });
+  }
+  const cfg = E.loadConfig();
+  cfg.ytd.toolPath = p;
+  try { E.saveConfig(cfg); } catch (e) { return sendJson(res, 500, { error: 'Could not save settings: ' + e.message }); }
+  const found = E.findYtdTool(cfg);
+  sendJson(res, 200, { toolPath: p, detected: found || '', ready: !!found });
 }
 
 // SSE: live progress while optimizing.
@@ -136,9 +159,20 @@ function handleOptimizeStream(req, res, q) {
   const opts = buildOpts(q);
   const backup = !(q.backup === 'false' || q.backup === false);
   const replace = q.replace === 'true' || q.replace === true;
+  const doYtd = q.ytd === 'true' || q.ytd === true;
 
   const { todo } = scan(folder, opts);
-  if (!todo.length) { send({ type: 'done', ok: 0, fail: 0, before: 0, after: 0 }); return res.end(); }
+
+  // Gather .ytd files if the user asked to optimize the packs too.
+  const cfg = E.loadConfig();
+  const ytdTool = doYtd ? E.findYtdTool(cfg) : null;
+  const ytds = ytdTool ? E.classify(E.walk(folder, [])).ytds : [];
+  if (doYtd && !ytdTool) {
+    send({ type: 'note', message: 'YTD tool (CodeWalker / GTAUtil) is not set up, so .ytd packs were skipped. Set it in Settings.' });
+  }
+
+  const totalTasks = todo.length + ytds.length;
+  if (totalTasks === 0) { send({ type: 'done', ok: 0, fail: 0, before: 0, after: 0 }); return res.end(); }
 
   if (!E.ensureTexconv()) {
     send({ type: 'error', message: process.platform === 'win32'
@@ -147,36 +181,52 @@ function handleOptimizeStream(req, res, q) {
     return res.end();
   }
 
-  send({ type: 'start', total: todo.length });
+  send({ type: 'start', total: totalTasks });
 
-  let ok = 0, fail = 0, before = 0, after = 0, i = 0;
-  // Process one file per tick so progress streams smoothly to the browser.
+  let ok = 0, fail = 0, before = 0, after = 0, done = 0, i = 0, y = 0;
+  const ytdOpts = { ...opts, backup };
+
+  // Phase 1: loose textures (one per tick), then Phase 2: .ytd packs.
   const step = () => {
-    if (i >= todo.length) {
-      send({ type: 'done', ok, fail, before, after });
-      return res.end();
+    if (i < todo.length) {
+      const j = todo[i++]; done++;
+      const dir = path.dirname(j.file);
+      const isDDS = path.extname(j.file).toLowerCase() === '.dds';
+      const outDds = path.join(dir, path.basename(j.file, path.extname(j.file)) + '.dds');
+      if (backup) E.backup(folder, j.file);
+      const r = E.runTexconv(j.file, { tw: parseInt(j.tgt), th: parseInt(j.tgt.split('x')[1]), fmt: j.fmt }, dir);
+      if (!r.ok) {
+        fail++;
+        send({ type: 'file', ok: false, rel: j.rel, message: r.msg, index: done, total: totalTasks });
+      } else {
+        let newSize = 0; try { newSize = fs.statSync(outDds).size; } catch {}
+        before += j.size; after += newSize; ok++;
+        if (!isDDS && replace) { try { fs.unlinkSync(j.file); } catch {} }
+        send({ type: 'file', ok: true, rel: j.rel, before: j.size, after: newSize,
+               kept: (!isDDS && !replace), index: done, total: totalTasks });
+      }
+      return setImmediate(step);
     }
-    const j = todo[i++];
-    const dir = path.dirname(j.file);
-    const isDDS = path.extname(j.file).toLowerCase() === '.dds';
-    const outDds = path.join(dir, path.basename(j.file, path.extname(j.file)) + '.dds');
 
-    if (backup) E.backup(folder, j.file);
-    const r = E.runTexconv(j.file, { tw: parseInt(j.tgt), th: parseInt(j.tgt.split('x')[1]), fmt: j.fmt }, dir);
-
-    if (!r.ok) {
-      fail++;
-      send({ type: 'file', ok: false, rel: j.rel, message: r.msg, index: i, total: todo.length });
-    } else {
-      let newSize = 0; try { newSize = fs.statSync(outDds).size; } catch {}
-      before += j.size; after += newSize; ok++;
-      if (!isDDS && replace) { try { fs.unlinkSync(j.file); } catch {} }
-      send({
-        type: 'file', ok: true, rel: j.rel, before: j.size, after: newSize,
-        kept: (!isDDS && !replace), index: i, total: todo.length,
-      });
+    if (y < ytds.length) {
+      const yf = ytds[y++]; done++;
+      const rel = path.relative(folder, yf);
+      send({ type: 'ytd-start', rel, index: done, total: totalTasks });
+      const r = E.optimizeYtd(folder, yf, ytdOpts, cfg, ytdTool,
+        (txt) => send({ type: 'ytd-log', rel, message: txt }));
+      if (!r.ok) {
+        fail++;
+        send({ type: 'ytd', ok: false, rel, message: r.msg, index: done, total: totalTasks });
+      } else {
+        before += r.before; after += r.after; ok++;
+        send({ type: 'ytd', ok: true, rel, before: r.before, after: r.after,
+               changed: r.changed, textures: r.total, index: done, total: totalTasks });
+      }
+      return setImmediate(step);
     }
-    setImmediate(step);
+
+    send({ type: 'done', ok, fail, before, after });
+    return res.end();
   };
   setImmediate(step);
 }
@@ -197,6 +247,8 @@ const server = http.createServer((req, res) => {
   const pathname = parsed.pathname;
 
   if (req.method === 'POST' && pathname === '/api/scan') return handleScan(req, res);
+  if (req.method === 'GET' && pathname === '/api/settings') return handleGetSettings(req, res);
+  if (req.method === 'POST' && pathname === '/api/settings') return handleSetSettings(req, res);
   if (req.method === 'GET' && pathname === '/api/optimize-stream') return handleOptimizeStream(req, res, parsed.query);
   if (req.method === 'GET') return serveStatic(req, res, pathname);
 

@@ -29,6 +29,39 @@ $('typeSeg').addEventListener('click', (e) => {
 });
 $('advToggle').addEventListener('click', () => $('advanced').classList.toggle('hidden'));
 
+// ---------- settings: the YTD tool (CodeWalker / GTAUtil) ----------
+let ytdReady = false;
+
+function renderToolStatus(d) {
+  ytdReady = !!d.ready;
+  $('toolPath').value = d.toolPath || '';
+  const badge = $('setupBadge');
+  badge.className = 'badge ' + (d.ready ? 'ok' : 'no');
+  badge.textContent = d.ready ? 'connected' : 'not set up';
+  const st = $('toolStatus');
+  if (d.ready) st.innerHTML = `✓ Ready — using <code>${esc(d.detected)}</code>`;
+  else st.textContent = 'Not connected yet — .ytd packs will be skipped until you set this.';
+}
+
+async function loadSettings() {
+  try { renderToolStatus(await (await fetch('/api/settings')).json()); } catch {}
+}
+loadSettings();
+
+$('saveTool').addEventListener('click', async () => {
+  const btn = $('saveTool'); btn.disabled = true; btn.textContent = 'Saving…';
+  try {
+    const res = await fetch('/api/settings', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ toolPath: $('toolPath').value.trim() }),
+    });
+    const d = await res.json();
+    if (!res.ok) { $('toolStatus').innerHTML = `<span style="color:var(--err)">${esc(d.error || 'Could not save.')}</span>`; }
+    else { renderToolStatus(d); if (lastScan) applyYtdAvailability(); }
+  } catch { $('toolStatus').textContent = 'Could not reach the tool.'; }
+  finally { btn.disabled = false; btn.textContent = 'Save'; }
+});
+
 function settings() {
   return {
     folder: $('folder').value.trim().replace(/^["']|["']$/g, ''),
@@ -84,15 +117,8 @@ function renderResults(d) {
   $('sGood').textContent = d.counts.alreadyGood;
   $('sSize').textContent = human(d.totalToOptimizeBytes);
 
-  // YTD note
-  const yn = $('ytdNote');
-  if (d.ytd.count) {
-    const top = d.ytd.files.slice(0, 5).map(f => `${esc(f.name)} (${human(f.size)})`).join(', ');
-    yn.innerHTML = `<b>${d.ytd.count} .ytd pack(s)</b> found (${human(d.ytd.totalBytes)} total). ` +
-      `These hold packed car/clothing/MLO textures and must be opened in OpenIV or CodeWalker to ` +
-      `optimize — this tool can't repack them directly. Biggest: ${top}.`;
-    yn.classList.remove('hidden');
-  } else yn.classList.add('hidden');
+  // YTD note + toggle availability
+  applyYtdAvailability();
 
   // table
   $('tableCount').textContent = d.jobs.length;
@@ -119,6 +145,42 @@ function renderResults(d) {
   $('results').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
+// Show the .ytd note and enable/disable the "also optimize .ytd" toggle based on
+// whether any .ytd packs exist and whether the CodeWalker/GTAUtil tool is set up.
+function applyYtdAvailability() {
+  const d = lastScan; if (!d) return;
+  const yn = $('ytdNote');
+  const wrap = $('ytdToggleWrap').parentElement; // .ytdopt
+  const box = $('ytd');
+  const hint = $('ytdHint');
+
+  if (!d.ytd.count) {
+    yn.classList.add('hidden');
+    wrap.classList.add('hidden');
+    return;
+  }
+  wrap.classList.remove('hidden');
+  const top = d.ytd.files.slice(0, 4).map(f => `${esc(f.name)} (${human(f.size)})`).join(', ');
+
+  if (ytdReady) {
+    yn.classList.add('hidden');
+    wrap.classList.remove('disabled');
+    box.disabled = false;
+    hint.innerHTML = `${d.ytd.count} pack(s), ${human(d.ytd.totalBytes)} total. Biggest: ${top}.`;
+  } else {
+    yn.classList.remove('hidden');
+    yn.innerHTML = `<b>${d.ytd.count} .ytd pack(s)</b> found (${human(d.ytd.totalBytes)} total) — the packed ` +
+      `car/clothing/MLO textures. To optimize these <b>automatically</b>, ` +
+      `<button class="link inline" id="openSetup">connect CodeWalker / GTAUtil ▸</button>. ` +
+      `Biggest: ${top}.`;
+    wrap.classList.add('disabled');
+    box.disabled = true; box.checked = false;
+    hint.textContent = 'Tool not set up — these will be skipped.';
+    const os = $('openSetup');
+    if (os) os.onclick = () => { $('setup').open = true; $('setup').scrollIntoView({ behavior: 'smooth' }); $('toolPath').focus(); };
+  }
+}
+
 // ---------- Step 3: apply with live progress ----------
 $('applyBtn').addEventListener('click', doApply);
 
@@ -139,6 +201,7 @@ function doApply() {
   const params = new URLSearchParams({
     folder: s.folder, type: s.type,
     aggressive: String(s.aggressive), backup: String($('backup').checked),
+    ytd: String($('ytd').checked && !$('ytd').disabled),
   });
   if (s.format) params.set('format', s.format);
   if (s.max) params.set('max', String(s.max));
@@ -152,19 +215,32 @@ function doApply() {
       total = m.total;
       $('progText').textContent = `0 of ${total} done…`;
     } else if (m.type === 'file') {
-      const pct = Math.round((m.index / m.total) * 100);
-      $('barFill').style.width = pct + '%';
-      $('progText').textContent = `${m.index} of ${m.total} done…`;
+      setPct(m.index, m.total);
       addLog(m);
+    } else if (m.type === 'ytd-start') {
+      setPct(m.index - 1, m.total);
+      addRaw('bad', `📦 ${m.rel} — working…`, 'ytd-' + m.rel);
+    } else if (m.type === 'ytd-log') {
+      updateRaw('ytd-' + m.rel, `📦 ${m.rel} — ${m.message}`);
+    } else if (m.type === 'ytd') {
+      setPct(m.index, m.total);
+      if (m.ok) updateRaw('ytd-' + m.rel, `✓ ${m.rel} — ${m.changed}/${m.textures} textures (${human(m.before)} → ${human(m.after)})`, 'ok');
+      else updateRaw('ytd-' + m.rel, `✗ ${m.rel} — ${m.message}`, 'bad');
+    } else if (m.type === 'note') {
+      addRaw('bad', 'ℹ ' + m.message);
     } else if (m.type === 'done') {
       finish(m);
       es.close();
     } else if (m.type === 'error') {
       $('progTitle').textContent = 'Could not optimize';
-      addLog({ ok: false, rel: m.message });
+      addRaw('bad', '✗ ' + m.message);
       es.close(); running = false; $('applyBtn').disabled = false;
     }
   };
+  function setPct(i, t) {
+    $('barFill').style.width = Math.round((i / t) * 100) + '%';
+    $('progText').textContent = `${i} of ${t} done…`;
+  }
   es.onerror = () => {
     if (running) { addLog({ ok: false, rel: 'Connection lost. Is the tool window still open?' }); }
     es.close(); running = false; $('applyBtn').disabled = false;
@@ -172,17 +248,29 @@ function doApply() {
 }
 
 function addLog(m) {
-  const div = document.createElement('div');
-  div.className = 'row ' + (m.ok ? 'ok' : 'bad');
-  if (m.ok) {
-    div.textContent = `✓ ${m.rel}  (${human(m.before)} → ${human(m.after)}${m.kept ? ', original kept' : ''})`;
-  } else {
-    div.textContent = `✗ ${m.rel}${m.message ? '  — ' + m.message : ''}`;
-  }
+  addRaw(m.ok ? 'ok' : 'bad',
+    m.ok ? `✓ ${m.rel}  (${human(m.before)} → ${human(m.after)}${m.kept ? ', original kept' : ''})`
+         : `✗ ${m.rel}${m.message ? '  — ' + m.message : ''}`);
+}
+
+// Append a log line. If `key` is given the row can be updated later (used for
+// .ytd packs, which show "working…" then get rewritten with the result).
+function addRaw(cls, text, key) {
   const log = $('log');
+  const div = document.createElement('div');
+  div.className = 'row ' + cls;
+  div.textContent = text;
+  if (key) div.dataset.key = key;
   log.appendChild(div);
   log.scrollTop = log.scrollHeight;
 }
+function updateRaw(key, text, cls) {
+  const row = $('log').querySelector(`.row[data-key="${cssEsc(key)}"]`);
+  if (!row) return addRaw(cls || 'bad', text, key);
+  row.textContent = text;
+  if (cls) row.className = 'row ' + cls;
+}
+function cssEsc(s) { return String(s).replace(/["\\\]]/g, '\\$&'); }
 
 function finish(m) {
   running = false;

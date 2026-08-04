@@ -25,6 +25,47 @@ const TEXCONV_URL = process.env.TEXCONV_URL ||
 const IMAGE_EXTS = new Set(['.dds', '.png', '.jpg', '.jpeg', '.tga', '.bmp']);
 const UNCOMPRESSED_EXTS = new Set(['.png', '.jpg', '.jpeg', '.tga', '.bmp']);
 
+// ---------- YTD tool (CodeWalker / GTAUtil) ----------
+// Optimizing packed .ytd archives (cars/clothing/MLO) needs an external tool
+// that can unpack and repack them. GTAUtil (built on CodeWalker's core) has a
+// command line that does exactly this. The path and the exact commands are
+// configurable in config.json so it keeps working across tool versions.
+const CONFIG_PATH = path.join(ROOT, 'config.json');
+const DEFAULT_CONFIG = {
+  ytd: {
+    // Full path to gtautil.exe (or a compatible CodeWalker CLI). Set via the UI.
+    toolPath: '',
+    // {in}=source .ytd  {outdir}=where to extract   {indir}=folder to pack  {out}=output dir
+    extractArgs: ['extractytd', '--input', '{in}', '--output', '{outdir}'],
+    createArgs: ['createytd', '--input', '{indir}', '--output', '{outdir}'],
+  },
+};
+
+function loadConfig() {
+  let user = {};
+  try { user = JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf8')); } catch {}
+  return { ytd: { ...DEFAULT_CONFIG.ytd, ...(user.ytd || {}) } };
+}
+function saveConfig(cfg) {
+  fs.writeFileSync(CONFIG_PATH, JSON.stringify(cfg, null, 2));
+}
+
+// Locate a usable YTD tool: configured path first, then env var, then common spots.
+function findYtdTool(cfg) {
+  cfg = cfg || loadConfig();
+  const cands = [
+    cfg.ytd && cfg.ytd.toolPath,
+    process.env.GTAUTIL, process.env.YTD_TOOL,
+    path.join(BIN_DIR, 'gtautil.exe'),
+    'C:\\Program Files\\GTAUtil\\gtautil.exe',
+    'C:\\GTAUtil\\gtautil.exe',
+  ];
+  for (const c of cands) {
+    try { if (c && fs.existsSync(c) && fs.statSync(c).isFile()) return c; } catch {}
+  }
+  return null;
+}
+
 // ---------- Presets ----------
 // maxSize = longest side allowed (bigger textures get scaled down to a power of
 // two <= maxSize). These are safe defaults that keep quality while cutting the
@@ -202,6 +243,7 @@ function walk(dir, out) {
     if (e.isDirectory()) {
       if (e.name === 'bin' && dir === ROOT) continue;      // our texconv folder
       if (e.name.startsWith('_backup_textures')) continue; // our own backups
+      if (e.name === '.ytd_work') continue;                // our temp unpack area
       walk(full, out);
     } else if (e.isFile()) {
       out.push(full);
@@ -476,12 +518,82 @@ function interactive(opts) {
   })().catch(e => { console.error(e.message); rl.close(); });
 }
 
+// ---------- YTD optimization (unpack -> optimize -> repack) ----------
+function rmrf(p) { try { fs.rmSync(p, { recursive: true, force: true }); } catch {} }
+function subArgs(args, vars) {
+  return args.map(a => a.replace(/\{(\w+)\}/g, (_, k) => (vars[k] !== undefined ? vars[k] : '{' + k + '}')));
+}
+function runTool(tool, args) {
+  const r = spawnSync(tool, args, { encoding: 'utf8' });
+  if (r.error) return { ok: false, msg: r.error.message };
+  if (r.status !== 0) {
+    const line = ((r.stderr || r.stdout || '').trim().split('\n').pop()) || ('exit code ' + r.status);
+    return { ok: false, msg: line };
+  }
+  return { ok: true, out: r.stdout || '' };
+}
+
+// Optimize one .ytd in place. Returns { ok, before, after, changed, total } or
+// { ok:false, msg }. `log(text)` is an optional progress callback.
+// Every texture the archive contained is carried into the repack (optimized or
+// copied as-is) so the rebuilt .ytd is never missing textures.
+function optimizeYtd(folder, file, opts, cfg, tool, log) {
+  const name = path.basename(file, path.extname(file));
+  const work = path.join(ROOT, '.ytd_work');
+  const exdir = path.join(work, name + '__ex');
+  const indir = path.join(work, name); // createytd names the archive after this folder
+  const outdir = path.join(work, name + '__out');
+  rmrf(exdir); rmrf(indir); rmrf(outdir);
+  fs.mkdirSync(exdir, { recursive: true });
+  fs.mkdirSync(indir, { recursive: true });
+  fs.mkdirSync(outdir, { recursive: true });
+  try {
+    if (log) log('unpacking ' + path.basename(file));
+    let r = runTool(tool, subArgs(cfg.ytd.extractArgs, { in: file, outdir: exdir }));
+    if (!r.ok) return { ok: false, msg: 'unpack failed: ' + r.msg };
+
+    const imgs = walk(exdir, []).filter(f => IMAGE_EXTS.has(path.extname(f).toLowerCase()));
+    if (!imgs.length) return { ok: false, msg: 'no textures found after unpack (is the tool set up right?)' };
+
+    let changed = 0;
+    for (const img of imgs) {
+      const base = path.basename(img);
+      let info = null;
+      try { info = readImageInfo(img, fs.readFileSync(img)); } catch {}
+      if (!info) { safeCopy(img, path.join(indir, base)); continue; } // unknown -> keep as-is
+      const p = plan(img, info, opts);
+      if (p.skip) { safeCopy(img, path.join(indir, base)); continue; } // already fine -> keep
+      const res = runTexconv(img, p, indir); // writes <base>.dds into indir
+      if (!res.ok) { safeCopy(img, path.join(indir, base)); continue; } // fall back to original
+      changed++;
+    }
+
+    if (log) log('optimized ' + changed + ' of ' + imgs.length + ' textures, repacking');
+    r = runTool(tool, subArgs(cfg.ytd.createArgs, { indir: indir, outdir: outdir }));
+    if (!r.ok) return { ok: false, msg: 'repack failed: ' + r.msg };
+
+    const produced = walk(outdir, []).find(f => path.extname(f).toLowerCase() === '.ytd') ||
+                     walk(work, []).find(f => path.extname(f).toLowerCase() === '.ytd' && f !== file);
+    if (!produced) return { ok: false, msg: 'repack did not produce a .ytd (check the tool commands)' };
+
+    let before = 0; try { before = fs.statSync(file).size; } catch {}
+    if (opts.backup !== false) backup(folder, file);
+    fs.copyFileSync(produced, file);
+    let after = 0; try { after = fs.statSync(file).size; } catch {}
+    return { ok: true, before, after, changed, total: imgs.length };
+  } finally {
+    rmrf(exdir); rmrf(indir); rmrf(outdir);
+  }
+}
+function safeCopy(src, dest) { try { fs.copyFileSync(src, dest); } catch {} }
+
 // Run the CLI only when invoked directly; when required (by server.js) just
 // expose the engine so the web UI can reuse the exact same logic.
 if (require.main === module) main();
 
 module.exports = {
-  ROOT, PRESETS, AGGRESSIVE,
+  ROOT, PRESETS, AGGRESSIVE, TEXCONV, CONFIG_PATH,
   resolveOpts, walk, classify, readImageInfo, plan, targetDims, chooseFormat,
-  ensureTexconv, runTexconv, backup, human, TEXCONV,
+  ensureTexconv, runTexconv, backup, human,
+  loadConfig, saveConfig, findYtdTool, optimizeYtd,
 };

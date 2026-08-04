@@ -78,15 +78,28 @@ For each loose texture it finds (.dds .png .jpg .tga .bmp) it will:
 Textures that are already sized, compressed and mipmapped are left alone.
 
 
-ABOUT .YTD FILES (packed vehicle / clothing / MLO textures)
+OPTIMIZING .YTD PACKS AUTOMATICALLY (cars / clothing / MLO)
 -----------------------------------------------------------
-In FiveM the finished textures usually live packed inside .ytd archives. This
-tool LISTS your .ytd files by size (so you can spot the bloated ones) but does
-NOT crack them open - repacking a .ytd safely needs OpenIV or CodeWalker:
-  1. Open the .ytd in OpenIV / CodeWalker and export its textures (as .dds).
-  2. Run this tool on the exported folder.
-  3. Import the optimized .dds back into the .ytd and save.
-For source/dev texture folders and any loose textures, this tool does it all.
+In FiveM the finished textures live packed inside .ytd archives. This tool can
+open them, optimize every texture inside, and repack them for you - but it needs
+a small helper to unpack/repack .ytd files, because that's a special format.
+
+  1. Get GTAUtil (a free CodeWalker-based command-line tool). Search "GTAUtil"
+     on GitHub and download the release - it's a folder with gtautil.exe inside.
+     (OpenIV has no command line, so it can't be automated - GTAUtil is the one
+     that can. Any compatible CodeWalker CLI works too.)
+  2. In the web UI, open "One-time setup" at the top and paste the full path to
+     gtautil.exe, then click Save. It shows "connected" when it's happy.
+  3. Now when you scan a folder, tick "Also optimize the .ytd packs" before you
+     click Optimize. The tool unpacks each .ytd, optimizes the textures, and
+     repacks it (your original .ytd is backed up first).
+
+If you skip this step the tool still optimizes all your loose textures and just
+LISTS the .ytd files by size so you can spot the bloated ones.
+
+Advanced: the tool path and the exact unpack/repack commands live in config.json
+next to this tool, so you can point it at a different CLI or adjust the commands
+if your version of GTAUtil uses different flags.
 
 
 REQUIREMENTS

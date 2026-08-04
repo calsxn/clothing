@@ -128,6 +128,22 @@ td.why { color: var(--warn); }
 td.file { font-family: ui-monospace, monospace; color: var(--muted); max-width: 320px; overflow: hidden; text-overflow: ellipsis; }
 tbody tr:last-child td { border-bottom: none; }
 
+/* setup panel */
+.setup { background: var(--panel2); }
+.setup > summary { cursor: pointer; font-size: 15px; list-style: none; }
+.setup > summary::-webkit-details-marker { display: none; }
+.setup[open] > summary { margin-bottom: 10px; }
+.badge { font-size: 12px; font-weight: 700; padding: 2px 9px; border-radius: 999px; margin-left: 6px; }
+.badge.ok { background: rgba(47,191,107,.16); color: #7ee2a8; border: 1px solid rgba(47,191,107,.4); }
+.badge.no { background: rgba(255,176,32,.14); color: #ffd591; border: 1px solid rgba(255,176,32,.4); }
+
+/* ytd toggle */
+.ytdopt { margin-top: 16px; padding: 12px 14px; background: var(--panel2); border: 1px solid var(--line); border-radius: 10px; }
+.ytdopt.disabled { opacity: .7; }
+.ytdopt .switch input:disabled { cursor: default; }
+#ytdHint { display: block; margin-top: 4px; }
+.link.inline { padding: 0; font-size: inherit; }
+
 /* apply bar */
 .applybar {
   display: flex; align-items: center; justify-content: space-between;
