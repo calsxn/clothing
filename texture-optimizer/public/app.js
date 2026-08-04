@@ -1,12 +1,14 @@
-// FiveM Texture Optimizer - browser UI logic
+// sxn opti - desktop UI logic (sidebar tool layout)
 'use strict';
 
 const $ = (id) => document.getElementById(id);
-let currentType = 'auto';
+let optimizeType = 'auto';   // remembered choice for the Optimize section
+let currentType = 'auto';    // active preset used for scans
 let lastScan = null;
 let running = false;
+let ytdReady = false;
 
-// ---------- small helpers ----------
+// ---------- helpers ----------
 function human(bytes) {
   if (bytes == null) return '–';
   if (bytes < 1024) return bytes + ' B';
@@ -16,33 +18,83 @@ function human(bytes) {
   return n.toFixed(n < 10 ? 1 : 0) + ' ' + u[i];
 }
 function esc(s) { return String(s).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c])); }
+function cssEsc(s) { return String(s).replace(/["\\\]]/g, '\\$&'); }
 
-// remember the last folder locally so teammates don't retype it
-try { $('folder').value = localStorage.getItem('to_folder') || ''; } catch {}
+// ---------- sidebar navigation ----------
+const SECTIONS = {
+  optimize: { title: 'Optimize', sub: 'Optimize any folder of textures — cars, clothing and MLO together.', type: null },
+  vehicles: { title: 'Vehicles', sub: 'Optimize vehicle textures (loose files and .ytd packs).', type: 'cars', chip: 'Preset: Cars' },
+  clothing: { title: 'Clothing', sub: 'Optimize clothing & ped textures.', type: 'clothing', chip: 'Preset: Clothing' },
+  mlo:      { title: 'MLO', sub: 'Optimize MLO / interior textures.', type: 'mlo', chip: 'Preset: MLO' },
+  settings: { title: 'Settings', sub: 'Connect your .ytd tool and view info.', type: 'settings' },
+};
+
+function setSection(name) {
+  const s = SECTIONS[name]; if (!s) return;
+  document.querySelectorAll('.navitem').forEach(b => b.classList.toggle('active', b.dataset.section === name));
+  $('sectionTitle').textContent = s.title;
+  $('sectionSub').textContent = s.sub;
+
+  if (name === 'settings') {
+    $('panel-work').classList.add('hidden');
+    $('panel-settings').classList.remove('hidden');
+    $('presetChip').classList.add('hidden');
+    return;
+  }
+  $('panel-settings').classList.add('hidden');
+  $('panel-work').classList.remove('hidden');
+
+  if (s.type === null) { // Optimize: user picks the type
+    $('typeSegWrap').classList.remove('hidden');
+    $('presetChip').classList.add('hidden');
+    currentType = optimizeType;
+  } else { // fixed-preset sections
+    $('typeSegWrap').classList.add('hidden');
+    $('presetChip').textContent = s.chip;
+    $('presetChip').classList.remove('hidden');
+    currentType = s.type;
+  }
+  // Reset the preview when switching, since the preset changed.
+  lastScan = null;
+  $('results').classList.add('hidden');
+  $('progress').classList.add('hidden');
+  $('scanError').classList.add('hidden');
+}
+
+document.querySelectorAll('.navitem').forEach(b => b.addEventListener('click', () => setSection(b.dataset.section)));
 
 // ---------- option controls ----------
 $('typeSeg').addEventListener('click', (e) => {
   const b = e.target.closest('button[data-type]');
   if (!b) return;
-  currentType = b.dataset.type;
+  optimizeType = currentType = b.dataset.type;
   [...$('typeSeg').children].forEach(x => x.classList.toggle('on', x === b));
 });
 $('advToggle').addEventListener('click', () => $('advanced').classList.toggle('hidden'));
 
-// ---------- settings: the YTD tool (CodeWalker / GTAUtil) ----------
-let ytdReady = false;
+function settings() {
+  return {
+    folder: $('folder').value.trim().replace(/^["']|["']$/g, ''),
+    type: currentType,
+    aggressive: $('aggressive').checked,
+    format: $('format').value || null,
+    max: $('max').value ? parseInt($('max').value, 10) : null,
+  };
+}
 
+try { $('folder').value = localStorage.getItem('to_folder') || ''; } catch {}
+
+// ---------- settings: the YTD tool ----------
 function renderToolStatus(d) {
   ytdReady = !!d.ready;
   $('toolPath').value = d.toolPath || '';
-  const badge = $('setupBadge');
-  badge.className = 'badge ' + (d.ready ? 'ok' : 'no');
-  badge.textContent = d.ready ? 'connected' : 'not set up';
-  const st = $('toolStatus');
-  if (d.ready) st.innerHTML = `✓ Ready — using <code>${esc(d.detected)}</code>`;
-  else st.textContent = 'Not connected yet — .ytd packs will be skipped until you set this.';
+  const side = $('sideToolStat');
+  side.classList.toggle('ok', ytdReady);
+  side.querySelector('.txt').textContent = ytdReady ? 'tool: connected' : 'tool: not set up';
+  $('toolStatus').innerHTML = ytdReady
+    ? `✓ Ready — using <code>${esc(d.detected)}</code>`
+    : 'Not connected yet — .ytd packs will be skipped until you set this.';
 }
-
 async function loadSettings() {
   try { renderToolStatus(await (await fetch('/api/settings')).json()); } catch {}
 }
@@ -56,23 +108,13 @@ $('saveTool').addEventListener('click', async () => {
       body: JSON.stringify({ toolPath: $('toolPath').value.trim() }),
     });
     const d = await res.json();
-    if (!res.ok) { $('toolStatus').innerHTML = `<span style="color:var(--err)">${esc(d.error || 'Could not save.')}</span>`; }
+    if (!res.ok) $('toolStatus').innerHTML = `<span style="color:var(--err)">${esc(d.error || 'Could not save.')}</span>`;
     else { renderToolStatus(d); if (lastScan) applyYtdAvailability(); }
   } catch { $('toolStatus').textContent = 'Could not reach the tool.'; }
   finally { btn.disabled = false; btn.textContent = 'Save'; }
 });
 
-function settings() {
-  return {
-    folder: $('folder').value.trim().replace(/^["']|["']$/g, ''),
-    type: currentType,
-    aggressive: $('aggressive').checked,
-    format: $('format').value || null,
-    max: $('max').value ? parseInt($('max').value, 10) : null,
-  };
-}
-
-// ---------- Step 1: scan ----------
+// ---------- Scan ----------
 $('scanBtn').addEventListener('click', doScan);
 $('folder').addEventListener('keydown', (e) => { if (e.key === 'Enter') doScan(); });
 
@@ -92,73 +134,57 @@ async function doScan() {
     if (!res.ok) { showScanError(data.error || 'Scan failed.'); return; }
     lastScan = data;
     renderResults(data);
-  } catch (err) {
-    showScanError('Could not reach the tool. Is the black window still open?');
+  } catch {
+    showScanError('Could not reach the tool. Is the app still running?');
   } finally {
     $('scanBtn').disabled = false; $('scanBtn').textContent = 'Scan';
   }
 }
-
 function showScanError(msg) {
-  const el = $('scanError');
-  el.textContent = msg; el.classList.remove('hidden');
+  const el = $('scanError'); el.textContent = msg; el.classList.remove('hidden');
   $('results').classList.add('hidden');
 }
 
-// ---------- Step 2: render results ----------
+// ---------- Results ----------
 function renderResults(d) {
   $('results').classList.remove('hidden');
   $('progress').classList.add('hidden');
-  $('scanned').textContent =
-    `Scanned ${esc(d.folder)} — preset: ${d.settings.type}, max ${d.settings.maxSize}px.`;
+  $('scanned').textContent = `Scanned ${d.folder} — preset: ${d.settings.type}, max ${d.settings.maxSize}px.`;
 
   $('sFound').textContent = d.counts.found;
   $('sTodo').textContent = d.counts.toOptimize;
   $('sGood').textContent = d.counts.alreadyGood;
   $('sSize').textContent = human(d.totalToOptimizeBytes);
 
-  // YTD note + toggle availability
   applyYtdAvailability();
 
-  // table
   $('tableCount').textContent = d.jobs.length;
-  const rows = d.jobs.map(j => `<tr>
+  $('tbody').innerHTML = d.jobs.map(j => `<tr>
       <td>${esc(j.cur)}</td><td class="arrow">→</td><td>${esc(j.tgt)}</td>
       <td class="fmt">${esc(j.fmt)}</td><td class="why">${esc(j.reasons.join(', '))}</td>
       <td class="file" title="${esc(j.rel)}">${esc(j.rel)}</td>
-    </tr>`).join('');
-  $('tbody').innerHTML = rows || '<tr><td colspan="6" class="muted">Nothing to optimize — these textures are already in good shape. 🎉</td></tr>';
+    </tr>`).join('') || '<tr><td colspan="6" class="muted">Nothing to optimize — these textures are already in good shape. 🎉</td></tr>';
 
-  // apply availability
   const applyBtn = $('applyBtn');
-  if (d.counts.toOptimize === 0) {
+  if (d.counts.toOptimize === 0 && !(ytdReady && d.ytd.count)) {
     applyBtn.disabled = true; applyBtn.textContent = 'Nothing to optimize';
   } else if (d.platform !== 'win32' && !d.texconvReady) {
     applyBtn.disabled = true; applyBtn.textContent = 'Windows only';
-    yn.classList.remove('hidden');
-    yn.innerHTML = 'Rewriting textures uses <b>texconv.exe</b>, which is Windows-only. ' +
-      'Run this tool on your Windows / FiveM machine to actually optimize. (Scanning works anywhere.)';
   } else {
-    applyBtn.disabled = false; applyBtn.textContent = `Optimize ${d.counts.toOptimize} texture(s) now`;
+    applyBtn.disabled = false; applyBtn.textContent = 'Optimize now';
   }
-
-  $('results').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  $('results').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 
-// Show the .ytd note and enable/disable the "also optimize .ytd" toggle based on
-// whether any .ytd packs exist and whether the CodeWalker/GTAUtil tool is set up.
+// Enable/disable the ".ytd" toggle and show the right note.
 function applyYtdAvailability() {
   const d = lastScan; if (!d) return;
   const yn = $('ytdNote');
-  const wrap = $('ytdToggleWrap').parentElement; // .ytdopt
+  const wrap = $('ytdToggleWrap').parentElement;
   const box = $('ytd');
   const hint = $('ytdHint');
 
-  if (!d.ytd.count) {
-    yn.classList.add('hidden');
-    wrap.classList.add('hidden');
-    return;
-  }
+  if (!d.ytd.count) { yn.classList.add('hidden'); wrap.classList.add('hidden'); return; }
   wrap.classList.remove('hidden');
   const top = d.ytd.files.slice(0, 4).map(f => `${esc(f.name)} (${human(f.size)})`).join(', ');
 
@@ -171,23 +197,24 @@ function applyYtdAvailability() {
     yn.classList.remove('hidden');
     yn.innerHTML = `<b>${d.ytd.count} .ytd pack(s)</b> found (${human(d.ytd.totalBytes)} total) — the packed ` +
       `car/clothing/MLO textures. To optimize these <b>automatically</b>, ` +
-      `<button class="link inline" id="openSetup">connect CodeWalker / GTAUtil ▸</button>. ` +
-      `Biggest: ${top}.`;
+      `<button class="link inline" id="openSetup">connect CodeWalker / GTAUtil ▸</button>. Biggest: ${top}.`;
     wrap.classList.add('disabled');
     box.disabled = true; box.checked = false;
     hint.textContent = 'Tool not set up — these will be skipped.';
     const os = $('openSetup');
-    if (os) os.onclick = () => { $('setup').open = true; $('setup').scrollIntoView({ behavior: 'smooth' }); $('toolPath').focus(); };
+    if (os) os.onclick = () => setSection('settings');
   }
 }
 
-// ---------- Step 3: apply with live progress ----------
+// ---------- Apply (live progress via SSE) ----------
 $('applyBtn').addEventListener('click', doApply);
 
 function doApply() {
   if (running || !lastScan) return;
-  if (!confirm(`Optimize ${lastScan.counts.toOptimize} texture(s) in this folder?\n\n` +
-      (($('backup').checked) ? 'Originals will be backed up first.' : 'WARNING: backup is OFF.'))) return;
+  const willYtd = $('ytd').checked && !$('ytd').disabled;
+  const n = lastScan.counts.toOptimize + (willYtd ? lastScan.ytd.count : 0);
+  if (!confirm(`Optimize ${n} item(s) in this folder?\n\n` +
+      ($('backup').checked ? 'Originals will be backed up first.' : 'WARNING: backup is OFF.'))) return;
 
   running = true;
   $('applyBtn').disabled = true;
@@ -196,82 +223,64 @@ function doApply() {
   $('log').innerHTML = '';
   $('progTitle').textContent = 'Optimizing…';
   $('barFill').style.width = '0%';
+  $('progress').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 
   const s = settings();
   const params = new URLSearchParams({
     folder: s.folder, type: s.type,
     aggressive: String(s.aggressive), backup: String($('backup').checked),
-    ytd: String($('ytd').checked && !$('ytd').disabled),
+    ytd: String(willYtd),
   });
   if (s.format) params.set('format', s.format);
   if (s.max) params.set('max', String(s.max));
 
   const es = new EventSource('/api/optimize-stream?' + params.toString());
-  let total = 0;
-
   es.onmessage = (ev) => {
     const m = JSON.parse(ev.data);
-    if (m.type === 'start') {
-      total = m.total;
-      $('progText').textContent = `0 of ${total} done…`;
-    } else if (m.type === 'file') {
-      setPct(m.index, m.total);
-      addLog(m);
-    } else if (m.type === 'ytd-start') {
-      setPct(m.index - 1, m.total);
-      addRaw('bad', `📦 ${m.rel} — working…`, 'ytd-' + m.rel);
-    } else if (m.type === 'ytd-log') {
-      updateRaw('ytd-' + m.rel, `📦 ${m.rel} — ${m.message}`);
-    } else if (m.type === 'ytd') {
+    if (m.type === 'start') { $('progText').textContent = `0 of ${m.total} done…`; }
+    else if (m.type === 'file') { setPct(m.index, m.total); addLog(m); }
+    else if (m.type === 'ytd-start') { setPct(m.index - 1, m.total); addRaw('bad', `📦 ${m.rel} — working…`, 'ytd-' + m.rel); }
+    else if (m.type === 'ytd-log') { updateRaw('ytd-' + m.rel, `📦 ${m.rel} — ${m.message}`); }
+    else if (m.type === 'ytd') {
       setPct(m.index, m.total);
       if (m.ok) updateRaw('ytd-' + m.rel, `✓ ${m.rel} — ${m.changed}/${m.textures} textures (${human(m.before)} → ${human(m.after)})`, 'ok');
       else updateRaw('ytd-' + m.rel, `✗ ${m.rel} — ${m.message}`, 'bad');
-    } else if (m.type === 'note') {
-      addRaw('bad', 'ℹ ' + m.message);
-    } else if (m.type === 'done') {
-      finish(m);
-      es.close();
-    } else if (m.type === 'error') {
+    }
+    else if (m.type === 'note') { addRaw('bad', 'ℹ ' + m.message); }
+    else if (m.type === 'done') { finish(m); es.close(); }
+    else if (m.type === 'error') {
       $('progTitle').textContent = 'Could not optimize';
       addRaw('bad', '✗ ' + m.message);
       es.close(); running = false; $('applyBtn').disabled = false;
     }
   };
-  function setPct(i, t) {
-    $('barFill').style.width = Math.round((i / t) * 100) + '%';
-    $('progText').textContent = `${i} of ${t} done…`;
-  }
   es.onerror = () => {
-    if (running) { addLog({ ok: false, rel: 'Connection lost. Is the tool window still open?' }); }
+    if (running) addRaw('bad', 'Connection lost. Is the app still running?');
     es.close(); running = false; $('applyBtn').disabled = false;
   };
 }
 
+function setPct(i, t) {
+  $('barFill').style.width = Math.round((i / t) * 100) + '%';
+  $('progText').textContent = `${i} of ${t} done…`;
+}
 function addLog(m) {
   addRaw(m.ok ? 'ok' : 'bad',
     m.ok ? `✓ ${m.rel}  (${human(m.before)} → ${human(m.after)}${m.kept ? ', original kept' : ''})`
          : `✗ ${m.rel}${m.message ? '  — ' + m.message : ''}`);
 }
-
-// Append a log line. If `key` is given the row can be updated later (used for
-// .ytd packs, which show "working…" then get rewritten with the result).
 function addRaw(cls, text, key) {
   const log = $('log');
   const div = document.createElement('div');
-  div.className = 'row ' + cls;
-  div.textContent = text;
+  div.className = 'row ' + cls; div.textContent = text;
   if (key) div.dataset.key = key;
-  log.appendChild(div);
-  log.scrollTop = log.scrollHeight;
+  log.appendChild(div); log.scrollTop = log.scrollHeight;
 }
 function updateRaw(key, text, cls) {
   const row = $('log').querySelector(`.row[data-key="${cssEsc(key)}"]`);
   if (!row) return addRaw(cls || 'bad', text, key);
-  row.textContent = text;
-  if (cls) row.className = 'row ' + cls;
+  row.textContent = text; if (cls) row.className = 'row ' + cls;
 }
-function cssEsc(s) { return String(s).replace(/["\\\]]/g, '\\$&'); }
-
 function finish(m) {
   running = false;
   $('barFill').style.width = '100%';
@@ -282,12 +291,12 @@ function finish(m) {
   const box = $('doneBox');
   box.classList.remove('hidden');
   box.innerHTML = m.ok
-    ? `Optimized <b>${m.ok}</b> texture(s). Size went from <b>${human(m.before)}</b> to ` +
-      `<b>${human(m.after)}</b> — you saved <b>${human(saved)} (${pct}%)</b>.` +
-      (m.fail ? ` ${m.fail} file(s) failed (see the list above).` : '') +
+    ? `Optimized <b>${m.ok}</b> item(s). Size went from <b>${human(m.before)}</b> to <b>${human(m.after)}</b> — ` +
+      `you saved <b>${human(saved)} (${pct}%)</b>.` + (m.fail ? ` ${m.fail} failed (see the list above).` : '') +
       `<br><span class="muted small">Originals are in the tool's <code>_backup_textures</code> folder.</span>`
     : `No files were changed. ${m.fail ? m.fail + ' failed.' : ''}`;
-  $('applyBtn').disabled = false;
-  $('applyBtn').textContent = 'Optimize again';
-  box.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  $('applyBtn').disabled = false; $('applyBtn').textContent = 'Optimize again';
 }
+
+// start on the Optimize section
+setSection('optimize');

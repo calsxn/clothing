@@ -8,137 +8,155 @@
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <header class="topbar">
-    <div class="wrap">
-      <h1>🚗 sxn opti</h1>
-      <p class="tag">FiveM texture optimizer — smaller car, clothing &amp; MLO textures, so your server loads faster and stutters less.</p>
+<div class="app">
+
+  <!-- ================= SIDEBAR ================= -->
+  <aside class="sidebar">
+    <div class="brand"><span class="logo">🚗</span> <span class="bname">sxn opti</span></div>
+
+    <nav class="nav">
+      <button class="navitem active" data-section="optimize"><span class="ic">⚡</span> Optimize</button>
+      <button class="navitem" data-section="vehicles"><span class="ic">🚗</span> Vehicles</button>
+      <button class="navitem" data-section="clothing"><span class="ic">👕</span> Clothing</button>
+      <button class="navitem" data-section="mlo"><span class="ic">🏠</span> MLO</button>
+      <div class="navsep"></div>
+      <button class="navitem" data-section="settings"><span class="ic">⚙️</span> Settings</button>
+    </nav>
+
+    <div class="sidefoot">
+      <div id="sideToolStat" class="toolstat"><span class="dot"></span><span class="txt">tool: checking…</span></div>
+      <div class="ver">FiveM texture optimizer</div>
     </div>
-  </header>
+  </aside>
 
-  <main class="wrap">
-
-    <!-- One-time setup for .ytd packs -->
-    <details id="setup" class="card setup">
-      <summary>⚙️ <b>One-time setup</b> — connect CodeWalker / GTAUtil so it can optimize <b>.ytd</b> packs <span id="setupBadge" class="badge"></span></summary>
-      <p class="muted small">Cars, clothing and MLOs keep their textures packed inside <code>.ytd</code> files.
-        To let this tool open, optimize and repack them <b>automatically</b>, point it at
-        <b>gtautil.exe</b> — a free CodeWalker-based command-line tool. Without this, the tool
-        still optimizes loose textures and lists your <code>.ytd</code> files so you can do them by hand.</p>
-      <div class="folder-row">
-        <input id="toolPath" type="text" spellcheck="false" placeholder="e.g.  C:\GTAUtil\gtautil.exe" />
-        <button id="saveTool" class="btn primary">Save</button>
+  <!-- ================= MAIN ================= -->
+  <main class="main">
+    <header class="mainbar">
+      <div>
+        <h1 id="sectionTitle">Optimize</h1>
+        <p id="sectionSub" class="muted small">Optimize any folder of textures — cars, clothing and MLO together.</p>
       </div>
-      <p id="toolStatus" class="small muted"></p>
-      <p class="muted small">Don't have it? Search <b>“GTAUtil”</b> on GitHub and download the release, then paste the path to <code>gtautil.exe</code> above. (Any compatible CodeWalker CLI works — advanced users can tweak the commands in <code>config.json</code>.)</p>
-    </details>
+      <span id="presetChip" class="chip hidden"></span>
+    </header>
 
-    <!-- STEP 1: choose a folder -->
-    <section class="card">
-      <div class="step">Step 1</div>
-      <h2>Pick the folder to optimize</h2>
-      <p class="muted">Paste the full path to a resource folder (it checks every sub-folder too).</p>
+    <div class="content">
 
-      <div class="folder-row">
-        <input id="folder" type="text" spellcheck="false"
-               placeholder="e.g.  C:\FXServer\resources\[cars]" />
-        <button id="scanBtn" class="btn primary">Scan</button>
-      </div>
+      <!-- ---------- WORK PANEL (Optimize / Vehicles / Clothing / MLO) ---------- -->
+      <section id="panel-work">
 
-      <div class="options">
-        <div class="opt">
-          <label>These textures are for…</label>
-          <div id="typeSeg" class="seg">
-            <button data-type="cars">Cars</button>
-            <button data-type="clothing">Clothing / Peds</button>
-            <button data-type="mlo">MLO / Interiors</button>
-            <button data-type="auto" class="on">Mixed</button>
+        <div class="card">
+          <label class="fieldlabel">Folder to optimize</label>
+          <div class="folder-row">
+            <input id="folder" type="text" spellcheck="false" placeholder="e.g.  C:\FXServer\resources\[cars]" />
+            <button id="scanBtn" class="btn primary">Scan</button>
           </div>
+
+          <div class="optbar">
+            <div id="typeSegWrap" class="optcol">
+              <label>These textures are for…</label>
+              <div id="typeSeg" class="seg">
+                <button data-type="cars">Cars</button>
+                <button data-type="clothing">Clothing</button>
+                <button data-type="mlo">MLO</button>
+                <button data-type="auto" class="on">Mixed</button>
+              </div>
+            </div>
+            <label class="switch"><input id="aggressive" type="checkbox" /><span>Extra small (1024px cap)</span></label>
+            <button id="advToggle" class="link">Advanced ▾</button>
+          </div>
+          <div id="advanced" class="advanced hidden">
+            <label>Force format
+              <select id="format">
+                <option value="">Auto (recommended)</option>
+                <option value="BC1">BC1 / DXT1 (smallest, no transparency)</option>
+                <option value="BC3">BC3 / DXT5 (transparency)</option>
+                <option value="BC7">BC7 (best quality)</option>
+              </select>
+            </label>
+            <label>Max size (px)
+              <input id="max" type="number" min="64" step="64" placeholder="auto" />
+            </label>
+          </div>
+          <div id="scanError" class="alert error hidden"></div>
         </div>
-        <div class="opt inline">
-          <label class="switch">
-            <input id="aggressive" type="checkbox" />
-            <span>Make them extra small (1024px cap)</span>
-          </label>
-          <button id="advToggle" class="link">Advanced ▾</button>
+
+        <!-- results -->
+        <section id="results" class="card hidden">
+          <h2>Preview</h2>
+          <p class="muted small" id="scanned"></p>
+          <div class="stats">
+            <div class="stat"><span id="sFound" class="num">0</span><span class="lbl">textures found</span></div>
+            <div class="stat good"><span id="sTodo" class="num">0</span><span class="lbl">can be optimized</span></div>
+            <div class="stat"><span id="sGood" class="num">0</span><span class="lbl">already fine</span></div>
+            <div class="stat"><span id="sSize" class="num">–</span><span class="lbl">their size now</span></div>
+          </div>
+
+          <div id="ytdNote" class="alert info hidden"></div>
+
+          <details id="tableWrap" class="tablebox">
+            <summary>Show the list of textures to optimize (<span id="tableCount">0</span>)</summary>
+            <div class="tscroll">
+              <table>
+                <thead><tr><th>Now</th><th></th><th>After</th><th>Format</th><th>Why</th><th>File</th></tr></thead>
+                <tbody id="tbody"></tbody>
+              </table>
+            </div>
+          </details>
+
+          <div class="ytdopt">
+            <label class="switch" id="ytdToggleWrap">
+              <input id="ytd" type="checkbox" />
+              <span>Also optimize the <b>.ytd</b> packs (cars / clothing / MLO)</span>
+            </label>
+            <span id="ytdHint" class="small muted"></span>
+          </div>
+
+          <div class="applybar">
+            <label class="switch"><input id="backup" type="checkbox" checked /><span>Back up my original files first</span></label>
+            <button id="applyBtn" class="btn go">Optimize now</button>
+          </div>
+          <p class="muted small">Originals are copied to <code>_backup_textures</code> before anything changes, so you can always undo.</p>
+        </section>
+
+        <!-- progress -->
+        <section id="progress" class="card hidden">
+          <h2 id="progTitle">Optimizing…</h2>
+          <div class="bar"><div id="barFill" class="fill"></div></div>
+          <p id="progText" class="muted small"></p>
+          <div id="doneBox" class="done hidden"></div>
+          <div id="log" class="log"></div>
+        </section>
+
+      </section>
+
+      <!-- ---------- SETTINGS PANEL ---------- -->
+      <section id="panel-settings" class="hidden">
+        <div class="card">
+          <h2>CodeWalker / GTAUtil tool</h2>
+          <p class="muted small">Cars, clothing and MLOs keep their textures packed inside <code>.ytd</code> files.
+            To let sxn opti open, optimize and repack them <b>automatically</b>, point it at
+            <b>gtautil.exe</b> — a free CodeWalker-based command-line tool. Without this, sxn opti still
+            optimizes loose textures and lists your <code>.ytd</code> files so you can do them by hand.</p>
+          <label class="fieldlabel">Path to gtautil.exe</label>
+          <div class="folder-row">
+            <input id="toolPath" type="text" spellcheck="false" placeholder="e.g.  C:\GTAUtil\gtautil.exe" />
+            <button id="saveTool" class="btn primary">Save</button>
+          </div>
+          <p id="toolStatus" class="small muted"></p>
+          <p class="muted small">Don't have it? Search <b>“GTAUtil”</b> on GitHub, download the release, and paste the path to <code>gtautil.exe</code> above. Any compatible CodeWalker CLI works — advanced users can tweak the commands in <code>config.json</code>.</p>
         </div>
-        <div id="advanced" class="advanced hidden">
-          <label>Force format
-            <select id="format">
-              <option value="">Auto (recommended)</option>
-              <option value="BC1">BC1 / DXT1 (smallest, no transparency)</option>
-              <option value="BC3">BC3 / DXT5 (transparency)</option>
-              <option value="BC7">BC7 (best quality)</option>
-            </select>
-          </label>
-          <label>Max size (px)
-            <input id="max" type="number" min="64" step="64" placeholder="auto" />
-          </label>
+
+        <div class="card">
+          <h2>About</h2>
+          <p class="muted small">sxn opti resizes oversized textures, compresses them with the right DDS/BC format,
+            and builds mipmaps — cutting VRAM use and texture-streaming stutter. Runs entirely on this PC.</p>
         </div>
-      </div>
+      </section>
 
-      <div id="scanError" class="alert error hidden"></div>
-    </section>
-
-    <!-- STEP 2: results / preview -->
-    <section id="results" class="card hidden">
-      <div class="step">Step 2</div>
-      <h2>Here's what we found</h2>
-      <p class="muted" id="scanned"></p>
-
-      <div class="stats">
-        <div class="stat"><span id="sFound" class="num">0</span><span class="lbl">textures found</span></div>
-        <div class="stat good"><span id="sTodo" class="num">0</span><span class="lbl">can be optimized</span></div>
-        <div class="stat"><span id="sGood" class="num">0</span><span class="lbl">already fine</span></div>
-        <div class="stat"><span id="sSize" class="num">–</span><span class="lbl">their size now</span></div>
-      </div>
-
-      <div id="ytdNote" class="alert info hidden"></div>
-
-      <details id="tableWrap" class="tablebox">
-        <summary>Show the list of textures to optimize (<span id="tableCount">0</span>)</summary>
-        <div class="tscroll">
-          <table>
-            <thead><tr><th>Now</th><th></th><th>After</th><th>Format</th><th>Why</th><th>File</th></tr></thead>
-            <tbody id="tbody"></tbody>
-          </table>
-        </div>
-      </details>
-
-      <div class="ytdopt">
-        <label class="switch" id="ytdToggleWrap">
-          <input id="ytd" type="checkbox" />
-          <span>Also optimize the <b>.ytd</b> packs (cars / clothing / MLO)</span>
-        </label>
-        <span id="ytdHint" class="small muted"></span>
-      </div>
-
-      <div class="applybar">
-        <label class="switch">
-          <input id="backup" type="checkbox" checked />
-          <span>Back up my original files first (recommended)</span>
-        </label>
-        <button id="applyBtn" class="btn go">Optimize now</button>
-      </div>
-      <p class="muted small">A backup copy of every file is saved in the tool's <code>_backup_textures</code> folder before anything changes, so you can always undo.</p>
-    </section>
-
-    <!-- STEP 3: progress -->
-    <section id="progress" class="card hidden">
-      <div class="step">Step 3</div>
-      <h2 id="progTitle">Optimizing…</h2>
-      <div class="bar"><div id="barFill" class="fill"></div></div>
-      <p id="progText" class="muted"></p>
-      <div id="doneBox" class="done hidden"></div>
-      <div id="log" class="log"></div>
-    </section>
-
+    </div>
   </main>
+</div>
 
-  <footer class="wrap muted small">
-    Runs on your machine • Share this window's link with your team on the same network •
-    Connect CodeWalker / GTAUtil once to optimize .ytd packs automatically (see “One-time setup”)
-  </footer>
-
-  <script src="app.js"></script>
+<script src="app.js"></script>
 </body>
 </html>
