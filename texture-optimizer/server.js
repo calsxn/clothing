@@ -59,7 +59,8 @@ function buildOpts(q) {
   const format = ['BC1', 'BC3', 'BC7'].includes(q.format) ? q.format : null;
   const max = q.max ? parseInt(q.max, 10) : null;
   const aggressive = q.aggressive === true || q.aggressive === 'true' || q.aggressive === '1';
-  return E.resolveOpts({ type, format, max: Number.isFinite(max) ? max : null, aggressive });
+  const skipLiveries = !(q.skipLiveries === 'false' || q.skipLiveries === false);
+  return E.resolveOpts({ type, format, max: Number.isFinite(max) ? max : null, aggressive, skipLiveries });
 }
 
 // Scan a folder and build the list of jobs + YTD report. Shared by both endpoints.
@@ -84,6 +85,7 @@ function scan(folder, opts) {
     });
   }
   const todo = jobs.filter(j => !j.skip);
+  const liveries = jobs.filter(j => j.skip && j.reasons.some(r => r.startsWith('livery'))).length;
 
   const ytdList = ytds.map(f => {
     let s = 0; try { s = fs.statSync(f).size; } catch {}
@@ -91,7 +93,7 @@ function scan(folder, opts) {
   }).sort((a, b) => b.size - a.size);
   const ytdTotal = ytdList.reduce((a, b) => a + b.size, 0);
 
-  return { jobs, todo, skipped: jobs.length - todo.length, ytdList, ytdTotal };
+  return { jobs, todo, skipped: jobs.length - todo.length, liveries, ytdList, ytdTotal };
 }
 
 // ---------- routes ----------
@@ -104,13 +106,13 @@ async function handleScan(req, res) {
   if (!st.isDirectory()) return sendJson(res, 400, { error: 'That path is not a folder.' });
 
   const opts = buildOpts(q);
-  const { jobs, todo, skipped, ytdList, ytdTotal } = scan(folder, opts);
+  const { jobs, todo, skipped, liveries, ytdList, ytdTotal } = scan(folder, opts);
   const totalToOpt = todo.reduce((a, b) => a + b.size, 0);
 
   sendJson(res, 200, {
     folder,
     settings: { type: opts.type, maxSize: opts.maxSize, format: opts.format, presetLabel: opts.presetLabel },
-    counts: { found: jobs.length, toOptimize: todo.length, alreadyGood: skipped },
+    counts: { found: jobs.length, toOptimize: todo.length, alreadyGood: skipped, liveries },
     totalToOptimizeBytes: totalToOpt,
     jobs: todo,
     ytd: { count: ytdList.length, totalBytes: ytdTotal, files: ytdList.slice(0, 50) },

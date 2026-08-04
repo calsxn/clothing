@@ -84,6 +84,13 @@ For each loose texture it finds (.dds .png .jpg .tga .bmp) it will:
   - build a full mipmap chain (the big fix for shimmering and VRAM spikes).
 Textures that are already sized, compressed and mipmapped are left alone.
 
+LIVERIES ARE LEFT ALONE (on cars)
+  Livery textures (files named like "..._livery..." or "sign_1") usually hold
+  logos and sponsor art that would look bad if shrunk or compressed, so sxn opti
+  SKIPS them by default and keeps them full quality - both loose files and the
+  liveries packed inside a .ytd. Untick "Skip vehicle liveries" in the app (or
+  use --include-liveries on the command line) to optimize them too.
+
 
 OPTIMIZING .YTD PACKS AUTOMATICALLY (cars / clothing / MLO)
 -----------------------------------------------------------

@@ -44,6 +44,9 @@ function setSection(name) {
   $('panel-settings').classList.add('hidden');
   $('panel-work').classList.remove('hidden');
 
+  // Liveries only matter for vehicles, so only offer the toggle there.
+  $('liveryWrap').classList.toggle('hidden', !(name === 'optimize' || name === 'vehicles'));
+
   if (s.type === null) { // Optimize: user picks the type
     $('typeSegWrap').classList.remove('hidden');
     $('presetChip').classList.add('hidden');
@@ -77,6 +80,7 @@ function settings() {
     folder: $('folder').value.trim().replace(/^["']|["']$/g, ''),
     type: currentType,
     aggressive: $('aggressive').checked,
+    skipLiveries: $('skipLiveries').checked,
     format: $('format').value || null,
     max: $('max').value ? parseInt($('max').value, 10) : null,
   };
@@ -156,6 +160,12 @@ function renderResults(d) {
   $('sGood').textContent = d.counts.alreadyGood;
   $('sSize').textContent = human(d.totalToOptimizeBytes);
 
+  const ln = $('liveryNote');
+  if (d.counts.liveries) {
+    ln.textContent = `🎨 ${d.counts.liveries} vehicle livery texture(s) skipped — kept at full quality.`;
+    ln.classList.remove('hidden');
+  } else ln.classList.add('hidden');
+
   applyYtdAvailability();
 
   $('tableCount').textContent = d.jobs.length;
@@ -229,7 +239,7 @@ function doApply() {
   const params = new URLSearchParams({
     folder: s.folder, type: s.type,
     aggressive: String(s.aggressive), backup: String($('backup').checked),
-    ytd: String(willYtd),
+    skipLiveries: String(s.skipLiveries), ytd: String(willYtd),
   });
   if (s.format) params.set('format', s.format);
   if (s.max) params.set('max', String(s.max));

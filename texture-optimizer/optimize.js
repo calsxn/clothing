@@ -83,7 +83,7 @@ function parseArgs(argv) {
   const a = {
     folder: null, type: 'auto', apply: false, aggressive: false,
     max: null, format: null, backup: true, replace: false, quiet: false,
-    help: false, interactive: false,
+    skipLiveries: true, help: false, interactive: false,
   };
   const rest = [];
   for (let i = 0; i < argv.length; i++) {
@@ -95,6 +95,8 @@ function parseArgs(argv) {
       case '--no-backup': a.backup = false; break;
       case '--replace': a.replace = true; break;
       case '--quiet': a.quiet = true; break;
+      case '--include-liveries': a.skipLiveries = false; break;
+      case '--skip-liveries': a.skipLiveries = true; break;
       case '--type': a.type = (argv[++i] || 'auto').toLowerCase(); break;
       case '--max': a.max = parseInt(argv[++i], 10); break;
       case '--format': a.format = (argv[++i] || '').toUpperCase(); break;
@@ -215,8 +217,23 @@ function chooseFormat(info, override) {
   return info.hasAlpha ? 'BC3' : 'BC1'; // DXT5 for alpha, DXT1 for opaque (4:1)
 }
 
+// Livery textures usually carry logos / sharp graphics that look bad when
+// downscaled or DXT-compressed, so we leave them at full quality. Matched by
+// the usual FiveM/GTA naming: "...livery..." or a numbered "sign" (sign_1).
+function isLivery(file) {
+  const n = path.basename(file).toLowerCase();
+  return /livery|liveries/.test(n) || /(^|[_\- ])sign_?\d/.test(n);
+}
+
 // Decide whether a file is worth reprocessing and why.
 function plan(file, info, opts) {
+  // Only relevant to vehicles; skip for cars and the mixed/auto preset.
+  if (opts.skipLiveries && (opts.type === 'cars' || opts.type === 'auto') && isLivery(file)) {
+    return {
+      skip: true, livery: true, reasons: ['livery (kept full quality)'],
+      tw: info.width, th: info.height, fmt: chooseFormat(info, opts.format),
+    };
+  }
   const [tw, th] = targetDims(info.width, info.height, opts.maxSize);
   const fmt = chooseFormat(info, opts.format);
   const reasons = [];
@@ -328,6 +345,8 @@ OPTIONS
   --format <BC1|BC3|BC7>            Force a compression format for every texture
                                     (default: BC1 opaque / BC3 alpha; BC7 = best quality)
   --aggressive                      Halve the size cap (1024) for maximum savings
+  --include-liveries                Also optimize vehicle liveries (default: skip them
+                                    so logos/livery art stay full quality)
   --apply                           Actually rewrite files (without this it's a dry run)
   --no-backup                       Skip copying originals to _backup_textures/
   --replace                         When a PNG/JPG/TGA becomes a DDS, remove the original
@@ -400,6 +419,8 @@ function run(rawOpts) {
   console.log(`  Folder : ${folder}`);
   console.log(`  Preset : ${opts.type} (${opts.presetLabel})`);
   console.log(`  Max    : ${opts.maxSize}px   Format: ${opts.format || 'BC1 opaque / BC3 alpha'}`);
+  if (opts.type === 'cars' || opts.type === 'auto')
+    console.log(`  Liveries: ${opts.skipLiveries ? 'skipped (kept full quality)' : 'included'}`);
   console.log(`  Mode   : ${opts.apply ? 'APPLY (files will be rewritten)' : 'DRY RUN (no changes)'}`);
 
   const files = walk(folder, []);
@@ -594,6 +615,6 @@ if (require.main === module) main();
 module.exports = {
   ROOT, PRESETS, AGGRESSIVE, TEXCONV, CONFIG_PATH,
   resolveOpts, walk, classify, readImageInfo, plan, targetDims, chooseFormat,
-  ensureTexconv, runTexconv, backup, human,
+  ensureTexconv, runTexconv, backup, human, isLivery,
   loadConfig, saveConfig, findYtdTool, optimizeYtd,
 };
