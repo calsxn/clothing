@@ -1,0 +1,8 @@
+# Auto-downloaded texconv.exe (Microsoft DirectXTex) - fetched on first run
+bin/
+
+# Safety copies of the textures this tool rewrites
+_backup_textures/
+
+# Portable Node runtime, if dropped here
+node/
