@@ -97,28 +97,31 @@ LIVERIES ARE LEFT ALONE (on cars)
   use --include-liveries on the command line) to optimize them too.
 
 
-OPTIMIZING .YTD PACKS AUTOMATICALLY (cars / clothing / MLO)
------------------------------------------------------------
-In FiveM the finished textures live packed inside .ytd archives. This tool can
-open them, optimize every texture inside, and repack them for you - but it needs
-a small helper to unpack/repack .ytd files, because that's a special format.
+OPTIMIZING .YTD PACKS (cars / clothing / MLO)
+---------------------------------------------
+In FiveM the finished textures live packed inside .ytd archives. Rewriting a
+.ytd safely needs a tool that understands that format, and there is NO simple
+free command-line tool that does it:
+  - GTAUtil does NOT support .ytd textures (it handles RPF/YMAP/YTYP/YDR/col).
+    It is also a command-line tool with no window, so double-clicking it just
+    flashes a black box - that's normal, it is not broken.
+  - OpenIV has no command line at all.
+So sxn opti CANNOT rewrite .ytd files on its own. Instead:
 
-  1. Get GTAUtil (a free CodeWalker-based command-line tool). Search "GTAUtil"
-     on GitHub and download the release - it's a folder with gtautil.exe inside.
-     (OpenIV has no command line, so it can't be automated - GTAUtil is the one
-     that can. Any compatible CodeWalker CLI works too.)
-  2. In the web UI, open "One-time setup" at the top and paste the full path to
-     gtautil.exe, then click Save. It shows "connected" when it's happy.
-  3. Now when you scan a folder, tick "Also optimize the .ytd packs" before you
-     click Optimize. The tool unpacks each .ytd, optimizes the textures, and
-     repacks it (your original .ytd is backed up first).
+  THE RELIABLE WAY
+  1. Open the .ytd in OpenIV or CodeWalker and export its textures (as .dds).
+  2. Run those exported textures through sxn opti (just scan that folder).
+  3. Import the optimized .dds back into the .ytd and save.
 
-If you skip this step the tool still optimizes all your loose textures and just
-LISTS the .ytd files by size so you can spot the bloated ones.
+  OR use a purpose-built app like ToolKitV, which optimizes textures inside
+  .ytd files for you.
 
-Advanced: the tool path and the exact unpack/repack commands live in config.json
-next to this tool, so you can point it at a different CLI or adjust the commands
-if your version of GTAUtil uses different flags.
+Either way, sxn opti still SCANS your .ytd files and lists the biggest ones so
+you know which packs are worth fixing.
+
+Advanced: if you ever get hold of a CLI that really can extract and rebuild .ytd
+texture dictionaries, you can wire it up under Settings > Advanced (the exact
+commands live in config.json). GTAUtil is not such a tool.
 
 
 REQUIREMENTS

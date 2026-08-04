@@ -229,11 +229,12 @@ function applyYtdAvailability() {
   } else {
     yn.classList.remove('hidden');
     yn.innerHTML = `<b>${d.ytd.count} .ytd pack(s)</b> found (${human(d.ytd.totalBytes)} total) — the packed ` +
-      `car/clothing/MLO textures. To optimize these <b>automatically</b>, ` +
-      `<button class="link inline" id="openSetup">connect CodeWalker / GTAUtil ▸</button>. Biggest: ${top}.`;
+      `car/clothing/MLO textures. sxn opti can't rewrite <code>.ytd</code> files directly; ` +
+      `<button class="link inline" id="openSetup">how to optimize these ▸</button> ` +
+      `(export in OpenIV/CodeWalker → run sxn opti → import). Biggest: ${top}.`;
     wrap.classList.add('disabled');
     box.disabled = true; box.checked = false;
-    hint.textContent = 'Tool not set up — these will be skipped.';
+    hint.textContent = 'These .ytd packs will be skipped (see how to optimize them).';
     const os = $('openSetup');
     if (os) os.onclick = () => setSection('settings');
   }

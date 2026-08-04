@@ -189,24 +189,40 @@
       <!-- ---------- SETTINGS PANEL ---------- -->
       <section id="panel-settings" class="hidden">
         <div class="card">
-          <h2>CodeWalker / GTAUtil tool</h2>
-          <p class="muted small">Cars, clothing and MLOs keep their textures packed inside <code>.ytd</code> files.
-            To let sxn opti open, optimize and repack them <b>automatically</b>, point it at
-            <b>gtautil.exe</b> — a free CodeWalker-based command-line tool. Without this, sxn opti still
-            optimizes loose textures and lists your <code>.ytd</code> files so you can do them by hand.</p>
-          <label class="fieldlabel">Path to gtautil.exe</label>
+          <h2>Optimizing .ytd packs</h2>
+          <p class="muted small">Finished car / clothing / MLO textures live packed inside <code>.ytd</code> files.
+            Repacking a <code>.ytd</code> safely needs a tool that understands that format — and there is
+            <b>no simple free command-line tool</b> that does it. (GTAUtil does <b>not</b> support <code>.ytd</code>
+            textures, and OpenIV has no command line.) So sxn opti can't rewrite <code>.ytd</code> files by itself.</p>
+          <p class="muted small"><b>The reliable way</b> to optimize a <code>.ytd</code>:</p>
+          <ol class="steps muted small">
+            <li>Open the <code>.ytd</code> in <b>OpenIV</b> or <b>CodeWalker</b> and export its textures (as <code>.dds</code>).</li>
+            <li>Run those exported textures through sxn opti (just scan that folder).</li>
+            <li>Import the optimized <code>.dds</code> back into the <code>.ytd</code> and save.</li>
+          </ol>
+          <p class="muted small">Or use a purpose-built app like <b>ToolKitV</b>, which optimizes textures inside <code>.ytd</code> for you.
+            sxn opti still scans your <code>.ytd</code> files and shows the biggest ones so you know which to fix.</p>
+        </div>
+
+        <details class="card">
+          <summary class="advset">Advanced — connect a .ytd command-line tool (optional)</summary>
+          <p class="muted small">Only if you have a CLI that can extract &amp; rebuild <code>.ytd</code> texture dictionaries
+            (a custom CodeWalker.CLI build, etc.). GTAUtil will <b>not</b> work here. The exact commands live in
+            <code>config.json</code> next to the tool — adjust them to match yours.</p>
+          <label class="fieldlabel">Path to the tool's .exe</label>
           <div class="folder-row">
-            <input id="toolPath" type="text" spellcheck="false" placeholder="e.g.  C:\GTAUtil\gtautil.exe" />
+            <input id="toolPath" type="text" spellcheck="false" placeholder="e.g.  C:\Tools\ytd-cli.exe" />
             <button id="saveTool" class="btn primary">Save</button>
           </div>
           <p id="toolStatus" class="small muted"></p>
-          <p class="muted small">Don't have it? Search <b>“GTAUtil”</b> on GitHub, download the release, and paste the path to <code>gtautil.exe</code> above. Any compatible CodeWalker CLI works — advanced users can tweak the commands in <code>config.json</code>.</p>
-        </div>
+        </details>
 
         <div class="card">
           <h2>About</h2>
           <p class="muted small">sxn opti resizes oversized textures, compresses them with the right DDS/BC format,
-            and builds mipmaps — cutting VRAM use and texture-streaming stutter. Runs entirely on this PC.</p>
+            and builds mipmaps — cutting VRAM use and texture-streaming stutter. It does this automatically for
+            loose textures (<code>.dds .png .jpg .tga .bmp</code>); <code>.ytd</code> packs use the workflow above.
+            Runs entirely on this PC.</p>
         </div>
       </section>
 
