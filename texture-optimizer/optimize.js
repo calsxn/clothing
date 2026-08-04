@@ -314,8 +314,8 @@ const pad = (s, n) => String(s).padEnd(n).slice(0, n);
 // ---------- Main flow ----------
 function help() {
   console.log(`
-FiveM Texture Optimizer
-=======================
+sxn opti - FiveM Texture Optimizer
+==================================
 Scans a folder of FiveM resources and rebuilds bloated textures as compressed
 DDS with mipmaps, so cars, clothing and MLOs use less VRAM and stream cleanly.
 
@@ -396,7 +396,7 @@ function run(rawOpts) {
     return;
   }
 
-  console.log(`\nFiveM Texture Optimizer`);
+  console.log(`\nsxn opti`);
   console.log(`  Folder : ${folder}`);
   console.log(`  Preset : ${opts.type} (${opts.presetLabel})`);
   console.log(`  Max    : ${opts.maxSize}px   Format: ${opts.format || 'BC1 opaque / BC3 alpha'}`);
@@ -495,7 +495,7 @@ function backup(folder, file) {
 function interactive(opts) {
   const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
   const ask = q => new Promise(r => rl.question(q, a => r(a.trim())));
-  console.log('\n=== FiveM Texture Optimizer ===');
+  console.log('\n=== sxn opti - FiveM Texture Optimizer ===');
   console.log('Optimizes textures for cars, clothing and MLOs (resize + compress + mipmaps).\n');
   (async () => {
     let folder = await ask('Folder to scan (drag it onto this window, or paste the path): ');

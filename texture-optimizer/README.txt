@@ -1,5 +1,5 @@
-FiveM Texture Optimizer
-=======================
+sxn opti  -  FiveM Texture Optimizer
+====================================
 
 Shrinks the textures for your cars, clothing and MLOs (resizes them, compresses
 them properly and adds mipmaps) so your server uses less VRAM, loads faster and

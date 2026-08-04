@@ -1,5 +1,5 @@
 @echo off
-title FiveM Texture Optimizer - UI
+title sxn opti - browser mode
 cd /d "%~dp0"
 
 rem --- Find a Node.js to run with ---
@@ -20,7 +20,7 @@ if not defined NODE (
   exit /b 1
 )
 
-echo Starting the Texture Optimizer...
+echo Starting sxn opti...
 echo A browser tab will open at  http://localhost:3001
 echo Keep THIS black window open while you use it. Close it to stop.
 echo.

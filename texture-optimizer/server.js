@@ -312,7 +312,7 @@ server.on('error', (e) => {
 server.listen(PORT, () => {
   const url = 'http://localhost:' + PORT;
   console.log('');
-  console.log('  FiveM Texture Optimizer is running.');
+  console.log('  sxn opti is running.');
   if (process.platform === 'win32' && APP_MODE) {
     console.log('  Opening the app window... (you can minimize this window)');
     if (!openInWindow(url)) {

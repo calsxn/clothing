@@ -1,5 +1,5 @@
 @echo off
-title FiveM Texture Optimizer
+title sxn opti
 cd /d "%~dp0"
 
 rem --- Find a Node.js to run with ---

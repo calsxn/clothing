@@ -1,5 +1,5 @@
 @echo off
-rem FiveM Texture Optimizer - desktop app launcher.
+rem sxn opti - FiveM texture optimizer - desktop app launcher.
 rem Opens in its own window (using the Edge/Chrome engine built into Windows) -
 rem no browser tabs, no address bar. Double-click this file to run it.
 
@@ -11,7 +11,7 @@ if not defined TO_APP_MIN (
   exit /b
 )
 
-title FiveM Texture Optimizer
+title sxn opti
 cd /d "%~dp0"
 
 rem --- Find Node.js (bundled with the tracker, next to us, or on the system) ---
