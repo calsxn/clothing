@@ -57,13 +57,13 @@ code { background: var(--panel2); padding: 1px 6px; border-radius: 5px; font-siz
 
 /* folder input */
 .folder-row { display: flex; gap: 10px; margin: 14px 0 8px; }
-#folder {
-  flex: 1; font-size: 15px; padding: 12px 14px;
+.folder-row input {
+  flex: 1; min-width: 0; font-size: 15px; padding: 12px 14px;
   background: var(--panel2); color: var(--text);
   border: 1px solid var(--line); border-radius: 10px;
   font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
 }
-#folder:focus { outline: none; border-color: var(--primary); }
+.folder-row input:focus { outline: none; border-color: var(--primary); }
 
 /* buttons */
 .btn {
